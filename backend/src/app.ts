@@ -334,7 +334,9 @@ export function createApp(db: AppDatabase = createDatabase()) {
       guideUrl: z.string().trim().min(1).max(500),
       level: z.number().int().min(10).max(100),
       league: z.string().trim().min(1).max(100).default('Runes of Aldur'),
-      maxPrice: z.number().positive().max(1000).default(3),
+      // High budgets are useful when the player is already mapping; do not reject
+      // a legitimate guide simply because the item budget is above 1,000 Ex.
+      maxPrice: z.number().positive().max(10000).default(3),
       equipment: z.array(z.object({ slot: z.string().trim().min(1).max(50), itemText: z.string().max(20000) })).max(20).optional(),
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Enter a valid build link, a level from 10 to 100, and a positive budget.' });

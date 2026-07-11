@@ -544,6 +544,7 @@ tr.excluded { opacity:.48; }
 .leveling-search { width:100%; min-height:46px; margin-top:18px; display:flex; align-items:center; justify-content:center; gap:8px; color:#d1b37f; border:1px solid #6a5332; background:linear-gradient(90deg,#17120c,#21170d,#17120c); text-transform:uppercase; font-size:8px; letter-spacing:.8px; }
 .leveling-search:disabled { opacity:.55; }
 .leveling-search svg { width:16px; }
+.leveling-hero{max-width:780px}.leveling-provider-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.leveling-provider-list span{padding:6px 9px;border:1px solid #344766;border-radius:999px;background:#111b30;color:#b9c7e6;font:700 10px Inter,sans-serif;letter-spacing:.02em}.leveling-fields label small{font-size:10px;color:#8fa0be;margin-top:-2px}
 .leveling-error,.leveling-warning { margin:13px 0 0; padding:12px 14px; color:#c09085; border:1px solid #553832; background:#18100f; font-size:9px; }
 .leveling-results { margin-top:18px; }
 .leveling-summary { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:14px; padding:20px 23px; border-color:#3b5b42; background:linear-gradient(100deg,rgba(61,110,75,.12),transparent),#111517; }

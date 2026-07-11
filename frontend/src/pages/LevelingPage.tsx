@@ -24,14 +24,14 @@ export function LevelingPage() {
   }
 
   return <div className="page standard-page leveling-page">
-    <header className="page-header"><span className="eyebrow">CAMPAIGN SHOPPING ASSISTANT</span><h1>Gear for the level you are now.</h1><p>Import a build from Mobalytics, poe.ninja, Maxroll, PoE Vault or pobb.in and find affordable, equippable items on the official PoE 2 market.</p></header>
+    <header className="page-header leveling-hero"><span className="eyebrow">LEVELING COMPANION</span><h1>Only see upgrades you can equip now.</h1><p>Paste your build once. We read its damage and defences, then make a short shopping list for your current level and budget.</p><div className="leveling-provider-list"><span>Mobalytics</span><span>poe.ninja</span><span>Maxroll</span><span>PoE Vault</span><span>pobb.in</span></div></header>
     <form className="card leveling-form" onSubmit={search}>
-      <div className="build-section-title"><TrendingUp/><div><h2>Leveling setup</h2><p>The guide determines weapon type, damage and defensive priorities. Searches never include items above your character level.</p></div></div>
+      <div className="build-section-title"><TrendingUp/><div><h2>Tell us where you are</h2><p>Step 1: add the guide. Step 2: set your level and an item budget. We exclude gear you cannot use yet.</p></div></div>
       <div className="leveling-fields">
-        <label className="leveling-guide">Build URL<input required type="url" value={guideUrl} onChange={(event) => setGuideUrl(event.target.value)} placeholder="Mobalytics, poe.ninja, Maxroll, PoE Vault or pobb.in"/></label>
-        <label>Character level<input aria-label="Character level" required type="number" min="10" max="100" value={level} onChange={(event) => setLevel(Number(event.target.value))}/></label>
-        <label>League<input aria-label="League" required value={league} onChange={(event) => setLeague(event.target.value)}/></label>
-        <label>Max price per item (Exalted)<input aria-label="Maximum price" required type="number" min="0.1" step="0.1" value={maxPrice} onChange={(event) => setMaxPrice(Number(event.target.value))}/></label>
+        <label className="leveling-guide">1. Build link<input required type="url" value={guideUrl} onChange={(event) => setGuideUrl(event.target.value)} placeholder="Paste a Mobalytics, poe.ninja, Maxroll, PoE Vault or pobb.in link"/></label>
+        <label>2. Your level<input aria-label="Character level" required type="number" min="10" max="100" value={level} onChange={(event) => setLevel(Number(event.target.value))}/></label>
+        <label>3. League<input aria-label="League" required value={league} onChange={(event) => setLeague(event.target.value)}/></label>
+        <label>4. Budget per item<input aria-label="Maximum price" required type="number" min="0.1" max="10000" step="0.1" value={maxPrice} onChange={(event) => setMaxPrice(Number(event.target.value))}/><small>Exalted · up to 10,000</small></label>
       </div>
       <button className="leveling-search" disabled={loading}>{loading ? <LoaderCircle className="spin"/> : <Search/>}{loading ? 'Reading build and searching Trade2…' : 'Find leveling upgrades'}</button>
       {error && <div className="leveling-error">{error}</div>}
