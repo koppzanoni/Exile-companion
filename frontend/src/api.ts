@@ -1,7 +1,8 @@
 import type { ActionEvaluation, Analysis, AppSettings, BuildDoctorResult, BuildFitProfile, BuildImportResult, BuildProfile, CatalogVersion, CharacterDetail, CharacterInput, CharacterSummary, CharacterTotals, CraftComparison, CraftGoal, CraftingCurrencyDef, CraftingHistoryEntry, CraftingItemState, CraftPlan, CustomBuildProfileInput, EquipmentSlotInput, ItemInput, KnowledgeStatus, LevelingSearchResult, MarketHistoryResult, NormalizedItem, PoeOAuthStatus, PoeRemoteCharacter, RaceReview } from './types';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...options?.headers } });
+  const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  const response = await fetch(`${baseUrl}${url}`, { ...options, headers: { 'Content-Type': 'application/json', ...options?.headers } });
   const body = response.status === 204 ? null : await response.json();
   if (!response.ok) throw new Error(body?.error || `Request failed (${response.status})`);
   return body;
