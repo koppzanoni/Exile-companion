@@ -1,6 +1,6 @@
-# Relic Lens — PoE 2 Orb Analyzer
+# Exile Companion — PoE 2 Build Assistant
 
-Relic Lens is a full-stack Path of Exile 2 price-comparison app. Paste an item or enter its stats, choose a league, and compare it with listings requested from the official PoE 2 Trade service. Every result is labeled **live**, **cached**, **manual**, or **no market data**; the app never substitutes invented listings when official access fails.
+Exile Companion is a full-stack Path of Exile 2 build and price-comparison app. Paste an item or enter its stats, choose a league, and compare it with listings requested from the official PoE 2 Trade service. Every result is labeled **live**, **cached**, **manual**, or **no market data**; the app never substitutes invented listings when official access fails.
 
 Every item also receives a market-independent quality evaluation: a 0–100 grade, strengths and weaknesses, upgrade priorities, market breadth, and build-archetype matches. On **My Build**, paste a Mobalytics PoE 2 guide URL to import its identity and Equipment Priority guidance into a reviewable profile, or configure one manually. The active profile adds a second, personalized score based on class, skill, progression stage, defence, stat priorities, minimum rolls, and slot-scoped required modifiers. This remains available even when Trade2 has no listings.
 
@@ -79,7 +79,7 @@ The default local database is `data/poe2-analyzer.db`. Set `DATABASE_PATH` to ov
 
 ## Honest market-data behavior
 
-The backend sends the generated query to the official `pathofexile.com/api/trade2` search and fetch endpoints. Rate limiting, Cloudflare, API changes, or session requirements can prevent that request. If so, Relic Lens displays the actual failure, offers its generated official search URL, and accepts manually exported listings as JSON or simple lines:
+The backend sends the generated query to the official `pathofexile.com/api/trade2` search and fetch endpoints. Rate limiting, Cloudflare, API changes, or session requirements can prevent that request. If so, Exile Companion displays the actual failure, offers its generated official search URL, and accepts manually exported listings as JSON or simple lines:
 
 ```text
 25 exalted | Stone Greaves | +70 Life, 25% Movement Speed

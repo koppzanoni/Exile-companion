@@ -25,6 +25,6 @@ export default function App() {
       <span className="official-pill"><i/> Trade2 connected</span>
     </header>
     <main><Routes><Route path="/" element={<AnalyzerPage/>}/><Route path="/characters" element={<CharactersPage/>}/><Route path="/build" element={<BuildPage/>}/><Route path="/build-doctor" element={<BuildDoctorPage/>}/><Route path="/leveling" element={<LevelingPage/>}/><Route path="/saved" element={<SavedPage/>}/><Route path="/knowledge" element={<KnowledgePage/>}/><Route path="/settings" element={<SettingsPage/>}/><Route path="/docs" element={<DocsPage/>}/></Routes></main>
-    <footer><span>RELIC LENS</span><span>Unofficial tool · Prices are evidence, not prophecy.</span></footer>
+    <footer><span>EXILE COMPANION</span><span>Unofficial tool · Prices are evidence, not prophecy.</span></footer>
   </div>;
 }
