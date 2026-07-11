@@ -76,7 +76,8 @@ const buildProfileSchema = z.object({
 
 export function createApp(db: AppDatabase = createDatabase()) {
   const app = express();
-  app.use(cors({ origin: process.env.FRONTEND_ORIGIN?.split(',') || true }));
+  const configuredOrigins = process.env.FRONTEND_ORIGIN?.split(',').map((origin) => origin.trim()).filter(Boolean);
+  app.use(cors({ origin: !configuredOrigins?.length || configuredOrigins.includes('*') ? true : configuredOrigins }));
   app.use(express.json({ limit: '2mb' }));
 
   app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'poe2-orb-analyzer', timestamp: new Date().toISOString() }));
