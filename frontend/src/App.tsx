@@ -1,4 +1,4 @@
-import { Activity, Archive, BookOpen, Database, Gem, Menu, Settings, Stethoscope, Swords, TrendingUp, Users, X } from 'lucide-react';
+import { Activity, Archive, BookOpen, Crosshair, Database, Gem, Menu, Settings, Stethoscope, Swords, TrendingUp, Users, X } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { AnalyzerPage } from './pages/AnalyzerPage';
@@ -10,9 +10,10 @@ import { BuildDoctorPage } from './pages/BuildDoctorPage';
 import { CharactersPage } from './pages/CharactersPage';
 import { LevelingPage } from './pages/LevelingPage';
 import { KnowledgePage } from './pages/KnowledgePage';
+import { DashboardPage } from './pages/DashboardPage';
 
 const nav = [
-  ['/', Activity, 'Analyze'], ['/characters', Users, 'Characters'], ['/build-doctor', Stethoscope, 'Build Doctor'], ['/leveling', TrendingUp, 'Leveling'], ['/build', Swords, 'Builds'], ['/saved', Archive, 'History'], ['/knowledge', Database, 'Atlas'], ['/settings', Settings, 'Settings'], ['/docs', BookOpen, 'Guide'],
+  ['/', Activity, 'Home'], ['/analyze-item', Crosshair, 'Analyze'], ['/characters', Users, 'Characters'], ['/build-doctor', Stethoscope, 'Build Doctor'], ['/leveling', TrendingUp, 'Leveling'], ['/build', Swords, 'Builds'], ['/saved', Archive, 'History'], ['/knowledge', Database, 'Atlas'], ['/settings', Settings, 'Settings'], ['/docs', BookOpen, 'Guide'],
 ] as const;
 
 export default function App() {
@@ -26,7 +27,7 @@ export default function App() {
     </header>
     <div className="app-content">
       <div className="workspace-strip"><div><span>BUILD WORKSPACE</span><strong>Set your active build to personalize every recommendation.</strong></div><NavLink to="/build">Configure build</NavLink></div>
-      <main><Routes><Route path="/" element={<AnalyzerPage/>}/><Route path="/characters" element={<CharactersPage/>}/><Route path="/build" element={<BuildPage/>}/><Route path="/build-doctor" element={<BuildDoctorPage/>}/><Route path="/leveling" element={<LevelingPage/>}/><Route path="/saved" element={<SavedPage/>}/><Route path="/knowledge" element={<KnowledgePage/>}/><Route path="/settings" element={<SettingsPage/>}/><Route path="/docs" element={<DocsPage/>}/></Routes></main>
+      <main><Routes><Route path="/" element={<DashboardPage/>}/><Route path="/analyze-item" element={<AnalyzerPage/>}/><Route path="/characters" element={<CharactersPage/>}/><Route path="/build" element={<BuildPage/>}/><Route path="/build-doctor" element={<BuildDoctorPage/>}/><Route path="/leveling" element={<LevelingPage/>}/><Route path="/saved" element={<SavedPage/>}/><Route path="/knowledge" element={<KnowledgePage/>}/><Route path="/settings" element={<SettingsPage/>}/><Route path="/docs" element={<DocsPage/>}/></Routes></main>
       <footer><span>EXILE COMPANION</span><span>Unofficial tool · Prices are evidence, not prophecy.</span></footer>
     </div>
   </div>;
