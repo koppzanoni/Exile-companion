@@ -15,9 +15,9 @@ beforeEach(() => {
 describe('build profile', () => {
   it('loads a preset and saves a personalized build', async () => {
     const user = userEvent.setup(); render(<BuildPage/>);
-    expect(await screen.findByText(/Teach the Lens your build/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Teach the Companion your build/i)).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText('Ice Shot Deadeye'), { target: { value: 'Glacial Lance' } });
-    fireEvent.change(screen.getByPlaceholderText('Ranger'), { target: { value: 'Huntress' } });
+    fireEvent.change(screen.getByLabelText('Build class'), { target: { value: 'Huntress' } });
     await user.click(screen.getByRole('button', { name: /Life \/ Evasion projectile/i }));
     expect(screen.getByLabelText('Maximum Life priority')).toHaveValue('required');
     await user.click(screen.getByRole('button', { name: /Save as active build/i }));
@@ -38,7 +38,7 @@ describe('build profile', () => {
   });
 
   it('creates a custom Build Fit profile',async()=>{
-    const user=userEvent.setup();render(<BuildPage/>);await screen.findByText(/Teach the Lens your build/i);
+    const user=userEvent.setup();render(<BuildPage/>);await screen.findByText(/Teach the Companion your build/i);
     fireEvent.change(screen.getByLabelText('Custom profile name'),{target:{value:'My Frost Monk'}});fireEvent.change(screen.getByLabelText('Custom class'),{target:{value:'Monk'}});fireEvent.change(screen.getByLabelText('Custom main skill'),{target:{value:'Ice Strike'}});fireEvent.change(screen.getByLabelText('Custom important stats'),{target:{value:'cold damage\nattack speed\nlife'}});
     await user.click(screen.getByRole('button',{name:'Save custom profile'}));expect(await screen.findByText('My Frost Monk')).toBeInTheDocument();expect(screen.getByText(/available in the Analyzer selector/i)).toBeInTheDocument();
   });

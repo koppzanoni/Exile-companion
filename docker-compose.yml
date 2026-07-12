@@ -7,6 +7,10 @@ services:
       PORT: 3001
       DATABASE_PATH: /app/data/poe2-analyzer.db
       FRONTEND_ORIGIN: http://localhost:8080
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      GEMINI_ENABLED: ${GEMINI_ENABLED:-true}
+      GEMINI_TIMEOUT_MS: ${GEMINI_TIMEOUT_MS:-12000}
     volumes:
       - poe2_data:/app/data
     ports:

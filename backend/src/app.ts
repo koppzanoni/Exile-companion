@@ -27,6 +27,7 @@ import { isLiveVerifiedSource, type BuildFitProfile, type ItemEvaluation, type I
 import { activatePatch, listCatalogVersions, rollbackToVersion, stagePatch, validateModifierCatalog } from './patchUpdater.js';
 import { buildBeginnerSummary } from './beginnerSummary.js';
 import { completeOAuth, fetchPoe2Character, fetchPoe2Characters, markSync, oauthFrontendUrl, oauthStatus, startOAuth, type PoeCharacter } from './poeOAuth.js';
+import { explainWithGemini } from './gemini.js';
 
 const analyzeSchema = z.object({
   league: z.string().min(1).default('Runes of Aldur'),
@@ -255,7 +256,8 @@ export function createApp(db: AppDatabase = createDatabase()) {
       const {evaluations,decision}=buildFourEvaluations({evaluation,comparison,craftingPotential,estimate,marketAnalysis,dataSource,recommendation});
       const opportunity=analyzeOpportunity({item,statContext:candidateStatContext,candidateOverallScore:statValuation.overallScore,estimate,marketAnalysis,comparison,craftingPotential,wastedStats:statValuation.contributions.filter((c)=>c.wasted).map((c)=>c.stat)});
       const beginnerSummary=buildBeginnerSummary({comparison,decision,evaluation});
-      const payload = { item, normalizedItem, evaluation, comparison, craftingPotential, recommendation, evaluations, decision, opportunity, beginnerSummary, league: input.league, dataSource, warning, officialUrl, divineToExalted: rate, estimate, comparableListings, marketAnalysis, statValuation, equippedStatValuation, timestamp: new Date().toISOString() };
+      const aiAnalysis=await explainWithGemini({item:{name:item.name,baseType:item.baseType,itemType:item.itemType,rarity:item.rarity,itemLevel:item.itemLevel,stats:item},category:evaluation.categoryAnalysis,build:{name:selectedBuild.name,className:selectedBuild.className,ascendancy:selectedBuild.ascendancy,mainSkill:selectedBuild.mainSkill,buildFit:evaluation.buildFitAnalysis},deterministicEvaluation:{score:evaluation.score,strengths:evaluation.strengths,weaknesses:evaluation.weaknesses,recommendation:recommendation.action,craftingPotential},market:{dataSource,warning,estimate:estimate?{quickSell:estimate.quickSell,fair:estimate.fair,high:estimate.high,confidence:estimate.confidence,usedCount:estimate.usedCount}:null,valuation:marketAnalysis.valuation},comparison,statValuation});
+      const payload = { item, normalizedItem, evaluation, comparison, craftingPotential, recommendation, evaluations, decision, opportunity, beginnerSummary, aiAnalysis, league: input.league, dataSource, warning, officialUrl, divineToExalted: rate, estimate, comparableListings, marketAnalysis, statValuation, equippedStatValuation, timestamp: new Date().toISOString() };
       let checkId: number | undefined;
       if (input.save) checkId = saveCheck(db, payload);
       if (character) {
