@@ -13,9 +13,9 @@ beforeEach(() => {
 describe('leveling page', () => {
   it('searches a guide at the entered level and renders purchasable gear', async () => {
     const user = userEvent.setup(); render(<LevelingPage/>);
-    fireEvent.change(screen.getByPlaceholderText(/Mobalytics, poe\.ninja/i), { target:{ value:'https://poe.ninja/poe2/pob/2370c' } });
+    fireEvent.change(screen.getByPlaceholderText(/Paste your build link here/i), { target:{ value:'https://poe.ninja/poe2/pob/2370c' } });
     fireEvent.change(screen.getByLabelText('Character level'), { target:{ value:'24' } });
-    await user.click(screen.getByRole('button', { name:/Find leveling upgrades/i }));
+    await user.click(screen.getByRole('button', { name:/Show upgrades for level/i }));
     expect(await screen.findByText('Ice Shot Deadeye')).toBeInTheDocument();
     expect(screen.getByText('Frost Branch')).toBeInTheDocument();
     expect(screen.getByText('1 Ex')).toBeInTheDocument();
