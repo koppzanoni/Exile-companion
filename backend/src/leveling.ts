@@ -120,7 +120,7 @@ async function searchSlot(plan: SearchPlan, league: string, level: number, curre
     if (!response.ok) throw new Error(`Trade2 returned HTTP ${response.status}`);
     const search = await response.json() as { id?: string; result?: string[] };
     const officialUrl = search.id ? `${BASE}/trade2/search/poe2/${encodeURIComponent(league)}/${search.id}` : fallbackUrl;
-    const ids = search.result?.slice(0, 5) || [];
+    const ids = selectPriceDiverseIds(search.result || [], 12);
     if (!search.id || !ids.length) return { ...pickPlan(plan), listings: [], officialUrl, warning: 'No matching online listings were found.' };
     const fetched = await fetch(`${BASE}/api/trade2/fetch/${ids.join(',')}?query=${search.id}`, {
       headers: { Accept: 'application/json', 'User-Agent': 'poe2-orb-analyzer/1.0 (personal leveling search)' },
@@ -206,3 +206,13 @@ function damagePriority(profile: BuildFitProfile) {
 }
 
 function pickPlan(plan: SearchPlan) { return { slot: plan.slot, label: plan.label, priorities: plan.priorities, budget: plan.budget }; }
+
+function selectPriceDiverseIds(ids: string[], maximum: number) {
+  if (ids.length <= maximum) return ids;
+  const selected = new Set<number>();
+  const cheapCount = Math.min(3, maximum);
+  for (let index = 0; index < cheapCount; index += 1) selected.add(index);
+  const remaining = maximum - selected.size;
+  for (let index = 1; index <= remaining; index += 1) selected.add(Math.round((index / (remaining + 1)) * (ids.length - 1)));
+  return [...selected].sort((a, b) => a - b).map((index) => ids[index]);
+}
