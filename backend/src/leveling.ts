@@ -13,7 +13,7 @@ export interface LevelingListing {
   baseType: string;
   requiredLevel?: number;
   price: number;
-  currency: 'exalted' | 'divine';
+  currency: string;
   account?: string;
   mods: string[];
   officialUrl: string;
@@ -96,23 +96,25 @@ export function buildLevelingSearchPlan(profile: BuildFitProfile, level: number,
   return chosen.map((slot) => ({ ...slot, budget, query: levelingQuery(slot.slot, slot.category, level, budget, weapon.attack) }));
 }
 
-export async function searchLevelingItems(profile: BuildFitProfile, level: number, league: string, maxPrice: number, options: { weakestSlots?: LevelingSlot[]; maxSlots?: number } = {}): Promise<LevelingSlotResult[]> {
+export async function searchLevelingItems(profile: BuildFitProfile, level: number, league: string, maxPrice: number, options: { weakestSlots?: LevelingSlot[]; maxSlots?: number; currency?: string } = {}): Promise<LevelingSlotResult[]> {
   const plans = buildLevelingSearchPlan(profile, level, maxPrice, options);
   const results: LevelingSlotResult[] = [];
   for (let index = 0; index < plans.length; index += 2) {
-    const batch = await Promise.all(plans.slice(index, index + 2).map((plan) => searchSlot(plan, league, level)));
+    const batch = await Promise.all(plans.slice(index, index + 2).map((plan) => searchSlot(plan, league, level, options.currency || 'exalted')));
     results.push(...batch);
   }
   return results;
 }
 
-async function searchSlot(plan: SearchPlan, league: string, level: number): Promise<LevelingSlotResult> {
+async function searchSlot(plan: SearchPlan, league: string, level: number, currency: string) {
   const fallbackUrl = `${BASE}/trade2/search/poe2/${encodeURIComponent(league)}?q=${Buffer.from(JSON.stringify(plan.query)).toString('base64url')}`;
+  const query = structuredClone(plan.query) as any;
+  query.query.filters.trade_filters = { filters: { price: { option: currency, max: plan.budget } } };
   try {
     const response = await fetch(`${BASE}/api/trade2/search/poe2/${encodeURIComponent(league)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'User-Agent': 'poe2-orb-analyzer/1.0 (personal leveling search)' },
-      body: JSON.stringify(plan.query),
+      body: JSON.stringify(query),
       signal: AbortSignal.timeout(12_000),
     });
     if (!response.ok) throw new Error(`Trade2 returned HTTP ${response.status}`);
@@ -126,7 +128,7 @@ async function searchSlot(plan: SearchPlan, league: string, level: number): Prom
     });
     if (!fetched.ok) throw new Error(`Trade2 listing fetch returned HTTP ${fetched.status}`);
     const payload = await fetched.json() as { result?: unknown[] };
-    const listings = (payload.result || []).flatMap((row) => normalizeListing(row, plan.slot, officialUrl, level, plan.budget));
+      const listings = (payload.result || []).flatMap((row) => normalizeListing(row, plan.slot, officialUrl, level, plan.budget));
     return { ...pickPlan(plan), listings, officialUrl, warning: listings.length ? undefined : 'Listings were found, but none had a supported price.' };
   } catch (error) {
     return { ...pickPlan(plan), listings: [], officialUrl: fallbackUrl, warning: error instanceof Error ? error.message : 'Trade2 search failed.' };
@@ -154,7 +156,7 @@ function levelingQuery(slot: LevelingSlot, category: string, level: number, maxP
         type_filters: { filters: { category: { option: category }, rarity: { option: 'rare' } } },
         req_filters: { filters: { lvl: { max: level } } },
         equipment_filters: { filters: equipment },
-        trade_filters: { filters: { price: { option: 'exalted_divine', max: maxPrice } } },
+        trade_filters: { filters: { price: { option: 'exalted', max: maxPrice } } },
       },
     },
     sort: { price: 'asc' },
@@ -173,8 +175,8 @@ function normalizeListing(value: unknown, slot: LevelingSlot, officialUrl: strin
   const row = value as Record<string, any>;
   const amount = Number(row.listing?.price?.amount);
   const rawCurrency = String(row.listing?.price?.currency || '').toLowerCase();
-  const currency = rawCurrency.includes('divine') ? 'divine' : rawCurrency.includes('exalted') ? 'exalted' : null;
-  if (!Number.isFinite(amount) || amount <= 0 || !currency) return [];
+  const currency = rawCurrency || 'unknown currency';
+  if (!Number.isFinite(amount) || amount <= 0) return [];
   const item = row.item || {};
   const requirements = Array.isArray(item.requirements) ? item.requirements : [];
   const levelRequirement = requirements.find((entry: any) => /level/i.test(String(entry?.name || '')));
