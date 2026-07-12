@@ -1,6 +1,7 @@
 import { Check, Cloud, History, LoaderCircle, RefreshCw, Save, Trash2, UserCircle2, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { ascendanciesFor, poeClasses } from '../poeClasses';
 import type { CharacterDetail, CharacterInput, CharacterSummary, EquipmentSlotInput, PoeOAuthStatus, PoeRemoteCharacter } from '../types';
 
 const slotNames = ['Weapon', 'Offhand', 'Helmet', 'Body Armour', 'Gloves', 'Boots', 'Belt', 'Amulet', 'Ring 1', 'Ring 2'];
@@ -71,8 +72,8 @@ export function CharactersPage() {
           <label>Name<input aria-label="Character name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Frostbolt"/></label>
           <label>League<input aria-label="Character league" value={form.league} onChange={(e) => setForm({ ...form, league: e.target.value })}/></label>
           <label>Level<input aria-label="Character level" type="number" min="1" max="100" value={form.level ?? ''} onChange={(e) => setForm({ ...form, level: e.target.value ? Number(e.target.value) : undefined })}/></label>
-          <label>Class<input aria-label="Character class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })}/></label>
-          <label>Ascendancy<input aria-label="Character ascendancy" value={form.ascendancy} onChange={(e) => setForm({ ...form, ascendancy: e.target.value })}/></label>
+          <label>Class<select aria-label="Character class" value={form.className || ''} onChange={(e) => setForm({ ...form, className: e.target.value, ascendancy: '' })}><option value="">Choose a class</option>{poeClasses.map((entry)=><option key={entry.name} value={entry.name}>{entry.name}</option>)}</select></label>
+          <label>Ascendancy<select aria-label="Character ascendancy" value={form.ascendancy || ''} disabled={!form.className} onChange={(e) => setForm({ ...form, ascendancy: e.target.value })}><option value="">{form.className ? 'Choose an ascendancy' : 'Choose a class first'}</option>{ascendanciesFor(form.className || '').map((name)=><option key={name} value={name}>{name}</option>)}</select></label>
           <label>Build profile ID<input aria-label="Build profile id" value={form.buildProfileId} onChange={(e) => setForm({ ...form, buildProfileId: e.target.value })} placeholder="e.g. ice-shot-deadeye or custom:1"/></label>
           <label>Progression stage<select aria-label="Progression stage" value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value as CharacterInput['stage'] })}><option value="campaign">Campaign</option><option value="early-maps">Early maps</option><option value="endgame">Endgame</option></select></label>
           <label>Budget (Exalted)<input aria-label="Character budget" type="number" min="0" value={form.budget ?? ''} onChange={(e) => setForm({ ...form, budget: e.target.value ? Number(e.target.value) : undefined })}/></label>
