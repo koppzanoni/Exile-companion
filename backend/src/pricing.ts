@@ -1,12 +1,35 @@
 import type { ItemStats, Listing } from './types.js';
 
 const numericKeys: Array<[keyof ItemStats, number]> = [
-  ['energyShield', 1.25], ['armour', 0.65], ['evasion', 0.65], ['deflection', 0.65], ['runicWard', 0.9], ['life', 1.4], ['mana', 0.35],
-  ['fireResistance', 0.75], ['coldResistance', 0.75], ['lightningResistance', 0.75], ['chaosResistance', 1.05],
-  ['intelligence', 0.45], ['strength', 0.4], ['dexterity', 0.4], ['rarityFind', 0.75], ['spirit', 1.3], ['stunThreshold', 0.25],
-  ['physicalDamageMin', 1.1], ['physicalDamageMax', 1.1], ['fireDamageMin', 0.65], ['fireDamageMax', 0.65],
-  ['coldDamageMin', 0.65], ['coldDamageMax', 0.65], ['lightningDamageMin', 0.65], ['lightningDamageMax', 0.65],
-  ['chaosDamageMin', 0.65], ['chaosDamageMax', 0.65], ['attacksPerSecond', 1.2], ['criticalHitChance', 0.9],
+  ['energyShield', 1.25],
+  ['armour', 0.65],
+  ['evasion', 0.65],
+  ['deflection', 0.65],
+  ['runicWard', 0.9],
+  ['life', 1.4],
+  ['mana', 0.35],
+  ['fireResistance', 0.75],
+  ['coldResistance', 0.75],
+  ['lightningResistance', 0.75],
+  ['chaosResistance', 1.05],
+  ['intelligence', 0.45],
+  ['strength', 0.4],
+  ['dexterity', 0.4],
+  ['rarityFind', 0.75],
+  ['spirit', 1.3],
+  ['stunThreshold', 0.25],
+  ['physicalDamageMin', 1.1],
+  ['physicalDamageMax', 1.1],
+  ['fireDamageMin', 0.65],
+  ['fireDamageMax', 0.65],
+  ['coldDamageMin', 0.65],
+  ['coldDamageMax', 0.65],
+  ['lightningDamageMin', 0.65],
+  ['lightningDamageMax', 0.65],
+  ['chaosDamageMin', 0.65],
+  ['chaosDamageMax', 0.65],
+  ['attacksPerSecond', 1.2],
+  ['criticalHitChance', 0.9],
 ];
 
 export function scoreSimilarity(target: ItemStats, listing: Listing): number {
@@ -14,7 +37,12 @@ export function scoreSimilarity(target: ItemStats, listing: Listing): number {
   let max = 0;
   const exactBase = normalize(target.baseType) === normalize(listing.baseType);
   max += 35;
-  score += exactBase ? 35 : normalize(listing.baseType).includes(normalize(target.baseType)) || normalize(target.baseType).includes(normalize(listing.baseType)) ? 18 : 0;
+  score += exactBase
+    ? 35
+    : normalize(listing.baseType).includes(normalize(target.baseType)) ||
+        normalize(target.baseType).includes(normalize(listing.baseType))
+      ? 18
+      : 0;
 
   max += 12;
   const rarityUnknown = listing.rarity === 'unknown';
@@ -44,7 +72,8 @@ export function scoreSimilarity(target: ItemStats, listing: Listing): number {
   }
 
   if (typeof target.itemLevel === 'number' && typeof listing.stats.itemLevel === 'number') {
-    max += 5; score += 5 * closeness(target.itemLevel, listing.stats.itemLevel, 10);
+    max += 5;
+    score += 5 * closeness(target.itemLevel, listing.stats.itemLevel, 10);
   }
   if (target.customMods.length && Array.isArray(listing.stats.customMods) && listing.stats.customMods.length) {
     for (const mod of target.customMods) {
@@ -57,11 +86,24 @@ export function scoreSimilarity(target: ItemStats, listing: Listing): number {
   return max ? Math.round((score / max) * 100) : 0;
 }
 
-const normalize = (value?: string) => String(value || '').trim().toLowerCase();
+const normalize = (value?: string) =>
+  String(value || '')
+    .trim()
+    .toLowerCase();
 function hasComparableWeaponDamage(target: Partial<ItemStats>, candidate: Partial<ItemStats>) {
   const targetPhysical = typeof target.physicalDamageMin === 'number' || typeof target.physicalDamageMax === 'number';
-  const candidatePhysical = typeof candidate.physicalDamageMin === 'number' || typeof candidate.physicalDamageMax === 'number';
-  const elementalKeys: Array<keyof ItemStats> = ['fireDamageMin', 'fireDamageMax', 'coldDamageMin', 'coldDamageMax', 'lightningDamageMin', 'lightningDamageMax', 'chaosDamageMin', 'chaosDamageMax'];
+  const candidatePhysical =
+    typeof candidate.physicalDamageMin === 'number' || typeof candidate.physicalDamageMax === 'number';
+  const elementalKeys: Array<keyof ItemStats> = [
+    'fireDamageMin',
+    'fireDamageMax',
+    'coldDamageMin',
+    'coldDamageMax',
+    'lightningDamageMin',
+    'lightningDamageMax',
+    'chaosDamageMin',
+    'chaosDamageMax',
+  ];
   const targetElemental = elementalKeys.some((key) => typeof target[key] === 'number');
   const candidateElemental = elementalKeys.some((key) => typeof candidate[key] === 'number');
   return (!targetPhysical || candidatePhysical) && (!targetElemental || candidateElemental);
@@ -83,7 +125,11 @@ export function explainItemSignals(item: ItemStats) {
     if (/increased Attack Speed/i.test(mods)) positive.push('Attack speed');
     if (/Critical Hit Chance|Critical Strike|Critical Damage/i.test(mods)) positive.push('Critical scaling');
     if (/additional (?:Projectile|Arrow)|grenade skills?/i.test(mods)) positive.push('Extra projectile utility');
-    const defensive = item.customMods.filter((line) => /to maximum Life|to .*Resistance|increased Energy Shield|increased Armour|increased Evasion/i.test(line) && !/Leech/i.test(line));
+    const defensive = item.customMods.filter(
+      (line) =>
+        /to maximum Life|to .*Resistance|increased Energy Shield|increased Armour|increased Evasion/i.test(line) &&
+        !/Leech/i.test(line),
+    );
     if (defensive.length) negative.push('Defensive affixes consume valuable weapon mod slots');
     if (!positive.length) positive.push('Exact weapon base/type match drives most of the comparison');
     return { positive, negative };
@@ -92,9 +138,15 @@ export function explainItemSignals(item: ItemStats) {
   if ((item.energyShield || 0) >= 100) positive.push(`Strong energy shield (${item.energyShield})`);
   if ((item.armour || 0) >= 200) positive.push(`Strong armour (${item.armour})`);
   if ((item.evasion || 0) >= 200) positive.push(`Strong evasion (${item.evasion})`);
-  if ((item.life || 0) >= 60) positive.push(`High life (+${item.life})`); else if (item.rarity === 'rare' && !item.life) negative.push('No maximum life roll');
-  const totalRes = (item.fireResistance || 0) + (item.coldResistance || 0) + (item.lightningResistance || 0) + (item.chaosResistance || 0);
-  if (totalRes >= 70) positive.push(`Strong combined resistances (+${totalRes}%)`); else if (item.rarity === 'rare' && totalRes < 30) negative.push('Low combined resistances');
+  if ((item.life || 0) >= 60) positive.push(`High life (+${item.life})`);
+  else if (item.rarity === 'rare' && !item.life) negative.push('No maximum life roll');
+  const totalRes =
+    (item.fireResistance || 0) +
+    (item.coldResistance || 0) +
+    (item.lightningResistance || 0) +
+    (item.chaosResistance || 0);
+  if (totalRes >= 70) positive.push(`Strong combined resistances (+${totalRes}%)`);
+  else if (item.rarity === 'rare' && totalRes < 30) negative.push('Low combined resistances');
   if (boots && (item.movementSpeed || 0) >= 25) positive.push(`Valuable movement speed (${item.movementSpeed}%)`);
   if (boots && !item.movementSpeed) negative.unshift('Missing movement speed is a major drawback on boots');
   else if (boots && (item.movementSpeed || 0) < 20) negative.push('Low movement speed for boots');
@@ -105,8 +157,15 @@ export function explainItemSignals(item: ItemStats) {
 }
 
 function weaponDps(item: ItemStats) {
-  const average = (min?: number, max?: number) => min === undefined || max === undefined ? 0 : (min + max) / 2;
-  return (average(item.physicalDamageMin, item.physicalDamageMax) + average(item.fireDamageMin, item.fireDamageMax) + average(item.coldDamageMin, item.coldDamageMax) + average(item.lightningDamageMin, item.lightningDamageMax) + average(item.chaosDamageMin, item.chaosDamageMax)) * (item.attacksPerSecond || 1);
+  const average = (min?: number, max?: number) => (min === undefined || max === undefined ? 0 : (min + max) / 2);
+  return (
+    (average(item.physicalDamageMin, item.physicalDamageMax) +
+      average(item.fireDamageMin, item.fireDamageMax) +
+      average(item.coldDamageMin, item.coldDamageMax) +
+      average(item.lightningDamageMin, item.lightningDamageMax) +
+      average(item.chaosDamageMin, item.chaosDamageMax)) *
+    (item.attacksPerSecond || 1)
+  );
 }
 
 export function describeMainDifference(target: ItemStats, listing: Listing): string {
@@ -119,15 +178,23 @@ export function describeMainDifference(target: ItemStats, listing: Listing): str
     if (typeof targetValue !== 'number' && typeof listedValue !== 'number') continue;
     const delta = (Number(listedValue) || 0) - (Number(targetValue) || 0);
     const weighted = Math.abs(delta) * weight;
-    if (weighted > bestWeightedDelta) { bestWeightedDelta = weighted; bestDelta = delta; bestKey = key; }
+    if (weighted > bestWeightedDelta) {
+      bestWeightedDelta = weighted;
+      bestDelta = delta;
+      bestKey = key;
+    }
   }
   if (!bestKey || Math.abs(bestDelta) < 0.5) return 'No notable stat difference';
-  const label = String(bestKey).replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim();
+  const label = String(bestKey)
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (c) => c.toUpperCase())
+    .trim();
   const sign = bestDelta > 0 ? '+' : '';
   return `${sign}${Math.round(bestDelta * 10) / 10} ${label}`;
 }
 
 export function convertCurrency(exalted: number, divineRate: number) {
-  if (!Number.isFinite(divineRate) || divineRate <= 0) throw new Error('Divine conversion rate must be greater than zero.');
+  if (!Number.isFinite(divineRate) || divineRate <= 0)
+    throw new Error('Divine conversion rate must be greater than zero.');
   return Math.round((exalted / divineRate) * 100) / 100;
 }

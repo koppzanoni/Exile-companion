@@ -1,7 +1,54 @@
 import request from 'supertest';
-import {afterEach,describe,expect,it} from 'vitest';
-import {createApp} from './app.js';
-import {createDatabase} from './db.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import { createApp } from './app.js';
+import { createDatabase } from './db.js';
 
-afterEach(()=>{delete process.env.WORKER_API_TOKEN;});
-describe('monitor worker concurrency',()=>{it('claims each due job only once across concurrent workers',async()=>{const db=createDatabase(':memory:'),app=createApp(db),characterId=Number(db.prepare("INSERT INTO characters(name,league) VALUES ('Worker','Test')").run().lastInsertRowid);for(let index=0;index<5;index++)db.prepare("INSERT INTO monitor_jobs(character_id,enabled,interval_minutes,next_run_at) VALUES (?,1,15,datetime('now','-1 minute'))").run(characterId);const[first,second]=await Promise.all([request(app).post('/api/worker/tick').set('x-worker-id','worker-a').send({}),request(app).post('/api/worker/tick').set('x-worker-id','worker-b').send({})]);expect(first.status).toBe(200);expect(second.status).toBe(200);expect(first.body.processed+second.body.processed).toBe(5);const rows=db.prepare('SELECT failure_count AS failures,locked_by AS lockedBy FROM monitor_jobs').all() as Array<{failures:number;lockedBy:string|null}>;expect(rows.every(row=>row.failures===1&&row.lockedBy===null)).toBe(true);db.close();});it('recovers a stale lock before claiming the job',async()=>{const db=createDatabase(':memory:'),app=createApp(db),characterId=Number(db.prepare("INSERT INTO characters(name,league) VALUES ('Stale','Test')").run().lastInsertRowid);db.prepare("INSERT INTO monitor_jobs(character_id,enabled,interval_minutes,next_run_at,locked_at,locked_by) VALUES (?,1,15,datetime('now','-1 minute'),datetime('now','-20 minutes'),'dead-worker')").run(characterId);const response=await request(app).post('/api/worker/tick').set('x-worker-id','recovery-worker').send({});expect(response.status).toBe(200);expect(response.body.processed).toBe(1);const row=db.prepare('SELECT locked_at AS lockedAt,locked_by AS lockedBy,failure_count AS failures FROM monitor_jobs').get() as any;expect(row.lockedAt).toBeNull();expect(row.lockedBy).toBeNull();expect(row.failures).toBe(1);db.close();});});
+afterEach(() => {
+  delete process.env.WORKER_API_TOKEN;
+});
+describe('monitor worker concurrency', () => {
+  it('claims each due job only once across concurrent workers', async () => {
+    const db = createDatabase(':memory:'),
+      app = createApp(db),
+      characterId = Number(
+        db.prepare("INSERT INTO characters(name,league) VALUES ('Worker','Test')").run().lastInsertRowid,
+      );
+    for (let index = 0; index < 5; index++)
+      db.prepare(
+        "INSERT INTO monitor_jobs(character_id,enabled,interval_minutes,next_run_at) VALUES (?,1,15,datetime('now','-1 minute'))",
+      ).run(characterId);
+    const [first, second] = await Promise.all([
+      request(app).post('/api/worker/tick').set('x-worker-id', 'worker-a').send({}),
+      request(app).post('/api/worker/tick').set('x-worker-id', 'worker-b').send({}),
+    ]);
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(first.body.processed + second.body.processed).toBe(5);
+    const rows = db.prepare('SELECT failure_count AS failures,locked_by AS lockedBy FROM monitor_jobs').all() as Array<{
+      failures: number;
+      lockedBy: string | null;
+    }>;
+    expect(rows.every((row) => row.failures === 1 && row.lockedBy === null)).toBe(true);
+    db.close();
+  });
+  it('recovers a stale lock before claiming the job', async () => {
+    const db = createDatabase(':memory:'),
+      app = createApp(db),
+      characterId = Number(
+        db.prepare("INSERT INTO characters(name,league) VALUES ('Stale','Test')").run().lastInsertRowid,
+      );
+    db.prepare(
+      "INSERT INTO monitor_jobs(character_id,enabled,interval_minutes,next_run_at,locked_at,locked_by) VALUES (?,1,15,datetime('now','-1 minute'),datetime('now','-20 minutes'),'dead-worker')",
+    ).run(characterId);
+    const response = await request(app).post('/api/worker/tick').set('x-worker-id', 'recovery-worker').send({});
+    expect(response.status).toBe(200);
+    expect(response.body.processed).toBe(1);
+    const row = db
+      .prepare('SELECT locked_at AS lockedAt,locked_by AS lockedBy,failure_count AS failures FROM monitor_jobs')
+      .get() as any;
+    expect(row.lockedAt).toBeNull();
+    expect(row.lockedBy).toBeNull();
+    expect(row.failures).toBe(1);
+    db.close();
+  });
+});

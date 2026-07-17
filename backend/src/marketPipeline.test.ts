@@ -5,17 +5,43 @@ import { buildItemAnalysis } from './normalizedItemParser.js';
 import { genericBuildFitProfile, defaultBuildProfiles } from './buildProfiles.js';
 import type { ItemStats, Listing } from './types.js';
 
-const item: ItemStats = { itemType: 'Boots', baseType: 'Stone Greaves', rarity: 'rare', itemLevel: 78, armour: 250, life: 70, movementSpeed: 25, fireResistance: 30, customMods: [] };
+const item: ItemStats = {
+  itemType: 'Boots',
+  baseType: 'Stone Greaves',
+  rarity: 'rare',
+  itemLevel: 78,
+  armour: 250,
+  life: 70,
+  movementSpeed: 25,
+  fireResistance: 30,
+  customMods: [],
+};
 const itemAnalysis = buildItemAnalysis(item, '', { league: 'Standard' });
 
-function payload(id: string, price: number, opts: { account?: string; armour?: number; life?: number; movementSpeed?: number; baseType?: string } = {}) {
+function payload(
+  id: string,
+  price: number,
+  opts: { account?: string; armour?: number; life?: number; movementSpeed?: number; baseType?: string } = {},
+) {
   return {
     id,
-    listing: { price: { amount: price, currency: 'exalted' }, indexed: new Date().toISOString(), account: { name: opts.account || `seller-${id}` } },
+    listing: {
+      price: { amount: price, currency: 'exalted' },
+      indexed: new Date().toISOString(),
+      account: { name: opts.account || `seller-${id}` },
+    },
     item: {
-      name: id, typeLine: opts.baseType || 'Stone Greaves', baseType: opts.baseType || 'Stone Greaves', rarity: 'Rare', ilvl: 78,
+      name: id,
+      typeLine: opts.baseType || 'Stone Greaves',
+      baseType: opts.baseType || 'Stone Greaves',
+      rarity: 'Rare',
+      ilvl: 78,
       properties: [{ name: '[Armour]', values: [[String(opts.armour ?? 245), 0]] }],
-      explicitMods: [{ description: `+${opts.life ?? 68} to maximum Life` }, { description: `${opts.movementSpeed ?? 25}% increased Movement Speed` }, { description: '+28% to Fire Resistance' }],
+      explicitMods: [
+        { description: `+${opts.life ?? 68} to maximum Life` },
+        { description: `${opts.movementSpeed ?? 25}% increased Movement Speed` },
+        { description: '+28% to Fire Resistance' },
+      ],
     },
   };
 }
@@ -39,7 +65,14 @@ describe('runMarketPipeline', () => {
   it('uses the first strategy without relaxing when it already has enough comparables', async () => {
     const batch = Array.from({ length: 6 }, (_, i) => payload(`m${i}`, 20 + i));
     const provider = providerWithSequence(batch);
-    const result = await runMarketPipeline({ item, itemAnalysis, build: genericBuildFitProfile, league: 'Standard', divineRate: 65, provider });
+    const result = await runMarketPipeline({
+      item,
+      itemAnalysis,
+      build: genericBuildFitProfile,
+      league: 'Standard',
+      divineRate: 65,
+      provider,
+    });
     expect(result.relaxed).toBe(false);
     expect(result.relaxationSteps).toEqual(['Same base and important stats']);
     expect(result.dataSource).toBe('live');
@@ -51,7 +84,14 @@ describe('runMarketPipeline', () => {
     const tooFew = [payload('only1', 20), payload('only2', 21)];
     const enough = Array.from({ length: 6 }, (_, i) => payload(`b${i}`, 18 + i));
     const provider = providerWithSequence(tooFew, enough);
-    const result = await runMarketPipeline({ item, itemAnalysis, build: genericBuildFitProfile, league: 'Standard', divineRate: 65, provider });
+    const result = await runMarketPipeline({
+      item,
+      itemAnalysis,
+      build: genericBuildFitProfile,
+      league: 'Standard',
+      divineRate: 65,
+      provider,
+    });
     expect(result.relaxed).toBe(true);
     expect(result.relaxationSteps.length).toBeGreaterThanOrEqual(2);
     expect(result.dataSource).toBe('relaxed-live');
@@ -60,7 +100,14 @@ describe('runMarketPipeline', () => {
 
   it('never invents a price when every strategy fails to find comparables', async () => {
     const provider = providerWithSequence([], [], [], [], []);
-    const result = await runMarketPipeline({ item, itemAnalysis, build: genericBuildFitProfile, league: 'Standard', divineRate: 65, provider });
+    const result = await runMarketPipeline({
+      item,
+      itemAnalysis,
+      build: genericBuildFitProfile,
+      league: 'Standard',
+      divineRate: 65,
+      provider,
+    });
     expect(result.dataSource).toBe('none');
     expect(result.usedCount).toBe(0);
     expect(result.valuation.fairPrice).toBe(0);
@@ -68,9 +115,24 @@ describe('runMarketPipeline', () => {
   });
 
   it('falls back to an approximated price from the closest comparables when nothing clears the similarity bar', async () => {
-    const looselySimilar = Array.from({ length: 6 }, (_, i) => payload(`s${i}`, 20 + i, { baseType: 'Reinforced Greaves', armour: 125, life: 35, movementSpeed: 12 }));
-    const provider = providerWithSequence(looselySimilar, looselySimilar, looselySimilar, looselySimilar, looselySimilar);
-    const result = await runMarketPipeline({ item, itemAnalysis, build: genericBuildFitProfile, league: 'Standard', divineRate: 65, provider });
+    const looselySimilar = Array.from({ length: 6 }, (_, i) =>
+      payload(`s${i}`, 20 + i, { baseType: 'Reinforced Greaves', armour: 125, life: 35, movementSpeed: 12 }),
+    );
+    const provider = providerWithSequence(
+      looselySimilar,
+      looselySimilar,
+      looselySimilar,
+      looselySimilar,
+      looselySimilar,
+    );
+    const result = await runMarketPipeline({
+      item,
+      itemAnalysis,
+      build: genericBuildFitProfile,
+      league: 'Standard',
+      divineRate: 65,
+      provider,
+    });
     expect(result.dataSource).toBe('similarity-fallback');
     expect(result.usedCount).toBeGreaterThan(0);
     expect(result.valuation.fairPrice).toBeGreaterThan(0);
@@ -79,9 +141,18 @@ describe('runMarketPipeline', () => {
   });
 
   it('reports discard reasons for listings below the similarity threshold', async () => {
-    const mismatched = Array.from({ length: 6 }, (_, i) => payload(`x${i}`, 20 + i, { armour: 5, life: 5, movementSpeed: 0, baseType: 'Other Boots' }));
+    const mismatched = Array.from({ length: 6 }, (_, i) =>
+      payload(`x${i}`, 20 + i, { armour: 5, life: 5, movementSpeed: 0, baseType: 'Other Boots' }),
+    );
     const provider = providerWithSequence(mismatched, mismatched, mismatched, mismatched, mismatched);
-    const result = await runMarketPipeline({ item, itemAnalysis, build: genericBuildFitProfile, league: 'Standard', divineRate: 65, provider });
+    const result = await runMarketPipeline({
+      item,
+      itemAnalysis,
+      build: genericBuildFitProfile,
+      league: 'Standard',
+      divineRate: 65,
+      provider,
+    });
     expect(result.usedCount).toBe(0);
     expect(Object.keys(result.discardReasons).length).toBeGreaterThan(0);
   });
@@ -90,8 +161,16 @@ describe('runMarketPipeline', () => {
 describe('manualMarketAnalysis', () => {
   it('scores, values, and exposes rejected outliers for pasted listings', () => {
     const listings: Listing[] = [20, 21, 22, 23, 24, 900].map((price, i) => ({
-      id: String(i), name: 'Stone Greaves', baseType: 'Stone Greaves', rarity: 'rare', price, currency: 'exalted', exaltedPrice: price,
-      source: 'manual', account: `seller-${i}`, stats: { armour: 250, life: 70, movementSpeed: 25, fireResistance: 30 },
+      id: String(i),
+      name: 'Stone Greaves',
+      baseType: 'Stone Greaves',
+      rarity: 'rare',
+      price,
+      currency: 'exalted',
+      exaltedPrice: price,
+      source: 'manual',
+      account: `seller-${i}`,
+      stats: { armour: 250, life: 70, movementSpeed: 25, fireResistance: 30 },
     }));
     const result = manualMarketAnalysis(item, listings, 65);
     expect(result.dataSource).toBe('manual');
@@ -105,8 +184,16 @@ describe('manualMarketAnalysis', () => {
 
   it('falls back to an approximated price from the pasted listings when none share the exact base type', () => {
     const listings: Listing[] = [20, 22, 24].map((price, i) => ({
-      id: String(i), name: 'Reinforced Greaves', baseType: 'Reinforced Greaves', rarity: 'rare', price, currency: 'exalted', exaltedPrice: price,
-      source: 'manual', account: `seller-${i}`, stats: { armour: 125, life: 35, movementSpeed: 12, fireResistance: 28, itemLevel: 78 },
+      id: String(i),
+      name: 'Reinforced Greaves',
+      baseType: 'Reinforced Greaves',
+      rarity: 'rare',
+      price,
+      currency: 'exalted',
+      exaltedPrice: price,
+      source: 'manual',
+      account: `seller-${i}`,
+      stats: { armour: 125, life: 35, movementSpeed: 12, fireResistance: 28, itemLevel: 78 },
     }));
     const result = manualMarketAnalysis(item, listings, 65);
     expect(result.dataSource).toBe('similarity-fallback');

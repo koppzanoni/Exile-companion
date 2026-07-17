@@ -1,5 +1,37 @@
-import {describe,expect,it} from 'vitest';
-import {analyzeLoadout,findSimilarBuilds,simulateLoadout,type CharacterBuildLoadout} from './buildKnowledge.js';
-import {allCodeProfiles} from './buildProfiles.js';
-const loadout:CharacterBuildLoadout={patch:'0.3.0',source:'manual',confidence:'High',mainSkill:'Ice Shot',weaponSet:'Bow',availableSpirit:60,skills:[{name:'Ice Shot',supports:['Cold Infusion'],spiritReservation:30},{name:'Herald',supports:[],spiritReservation:40}],keyPassives:['Acrobatics']};
-describe('build knowledge',()=>{it('maps dependencies and warns about Spirit',()=>{const result=analyzeLoadout(loadout);expect(result.reservedSpirit).toBe(70);expect(result.warnings.join(' ')).toMatch(/exceed/);expect(result.dependencies.some(entry=>entry.kind==='support')).toBe(true);});it('ranks similar local profiles with provenance',()=>{const result=findSimilarBuilds({className:'Ranger',ascendancy:'Deadeye'},loadout,allCodeProfiles());expect(result.sampleSize).toBeGreaterThan(0);expect(result.matches[0].score).toBeGreaterThan(0);expect(result.limitation).toMatch(/not global/i);});it('marks a draft safe only when it creates no mechanical warning',()=>{const safe={...loadout,availableSpirit:100};const unsafe=simulateLoadout(safe,loadout);expect(unsafe.safe).toBe(false);expect(unsafe.newWarnings.join(' ')).toMatch(/Spirit/i);expect(simulateLoadout(safe,{...safe,skills:safe.skills.slice(0,1)}).safe).toBe(true);});});
+import { describe, expect, it } from 'vitest';
+import { analyzeLoadout, findSimilarBuilds, simulateLoadout, type CharacterBuildLoadout } from './buildKnowledge.js';
+import { allCodeProfiles } from './buildProfiles.js';
+const loadout: CharacterBuildLoadout = {
+  patch: '0.3.0',
+  source: 'manual',
+  confidence: 'High',
+  mainSkill: 'Ice Shot',
+  weaponSet: 'Bow',
+  availableSpirit: 60,
+  skills: [
+    { name: 'Ice Shot', supports: ['Cold Infusion'], spiritReservation: 30 },
+    { name: 'Herald', supports: [], spiritReservation: 40 },
+  ],
+  keyPassives: ['Acrobatics'],
+};
+describe('build knowledge', () => {
+  it('maps dependencies and warns about Spirit', () => {
+    const result = analyzeLoadout(loadout);
+    expect(result.reservedSpirit).toBe(70);
+    expect(result.warnings.join(' ')).toMatch(/exceed/);
+    expect(result.dependencies.some((entry) => entry.kind === 'support')).toBe(true);
+  });
+  it('ranks similar local profiles with provenance', () => {
+    const result = findSimilarBuilds({ className: 'Ranger', ascendancy: 'Deadeye' }, loadout, allCodeProfiles());
+    expect(result.sampleSize).toBeGreaterThan(0);
+    expect(result.matches[0].score).toBeGreaterThan(0);
+    expect(result.limitation).toMatch(/not global/i);
+  });
+  it('marks a draft safe only when it creates no mechanical warning', () => {
+    const safe = { ...loadout, availableSpirit: 100 };
+    const unsafe = simulateLoadout(safe, loadout);
+    expect(unsafe.safe).toBe(false);
+    expect(unsafe.newWarnings.join(' ')).toMatch(/Spirit/i);
+    expect(simulateLoadout(safe, { ...safe, skills: safe.skills.slice(0, 1) }).safe).toBe(true);
+  });
+});

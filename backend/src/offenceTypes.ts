@@ -1,6 +1,6 @@
-export type EvidenceConfidence = "High" | "Medium" | "Low";
-export type DamageType = "physical" | "fire" | "cold" | "lightning" | "chaos";
-export type BuildStage = "campaign" | "early-maps" | "established" | "transition" | "endgame" | "aspirational";
+export type EvidenceConfidence = 'High' | 'Medium' | 'Low';
+export type DamageType = 'physical' | 'fire' | 'cold' | 'lightning' | 'chaos';
+export type BuildStage = 'campaign' | 'early-maps' | 'established' | 'transition' | 'endgame' | 'aspirational';
 
 export interface SourceEvidence {
   label: string;
@@ -16,13 +16,13 @@ export interface ConversionRule {
   from: DamageType;
   to: DamageType;
   percent: number;
-  kind: "convert" | "gain-as-extra";
-  scope: "skill-inherent" | "external";
+  kind: 'convert' | 'gain-as-extra';
+  scope: 'skill-inherent' | 'external';
 }
 
 export interface ProjectilePolicy {
-  mode: "single" | "simultaneous" | "sequential" | "unknown";
-  sameTarget: "one" | "all" | "interval-limited" | "unknown";
+  mode: 'single' | 'simultaneous' | 'sequential' | 'unknown';
+  sameTarget: 'one' | 'all' | 'interval-limited' | 'unknown';
   intervalSeconds?: number;
   secondaryGeometryKnown: boolean;
   clearCoverageOnlyProjectiles: boolean;
@@ -31,7 +31,7 @@ export interface ProjectilePolicy {
 export interface SkillComponent {
   id: string;
   label: string;
-  kind: "attack-hit" | "spell-hit" | "ailment" | "secondary";
+  kind: 'attack-hit' | 'spell-hit' | 'ailment' | 'secondary';
   damageTypes: DamageType[];
   attackDamagePercent?: number;
   baseDamage?: Partial<Record<DamageType, { min: number; max: number }>>;
@@ -50,8 +50,8 @@ export interface SkillMechanicProfile {
   level: number;
   tags: string[];
   weaponRequirements: string[];
-  use: { kind: "attack" | "spell" | "ammunition"; multiplier: number; baseSeconds?: number };
-  cost: { resource: "mana" | "life" | "energy-shield"; amount: number; paid: "use" | "reload" };
+  use: { kind: 'attack' | 'spell' | 'ammunition'; multiplier: number; baseSeconds?: number };
+  cost: { resource: 'mana' | 'life' | 'energy-shield'; amount: number; paid: 'use' | 'reload' };
   reload?: { baseSecondsFromWeapon: true; bolts: number; speedMultiplier: number };
   components: SkillComponent[];
   conversions: ConversionRule[];
@@ -60,8 +60,8 @@ export interface SkillMechanicProfile {
 }
 
 export interface RotationScenario {
-  contentTarget: "mapping" | "bossing" | "unknown";
-  targetRarity: "normal" | "magic" | "rare" | "unique" | "unknown";
+  contentTarget: 'mapping' | 'bossing' | 'unknown';
+  targetRarity: 'normal' | 'magic' | 'rare' | 'unique' | 'unknown';
   durationSeconds: number;
   movementShare: number;
   targetResistance?: Partial<Record<DamageType, number>>;
@@ -80,11 +80,11 @@ export interface BreakpointFailure {
   message: string;
   required?: number;
   available?: number;
-  severity: "blocking" | "warning";
+  severity: 'blocking' | 'warning';
 }
 
 export interface MechanicCoverage {
-  status: "complete" | "partial" | "unknown";
+  status: 'complete' | 'partial' | 'unknown';
   covered: string[];
   missing: string[];
   ignored: string[];
@@ -96,11 +96,11 @@ export interface OffenceResult {
   skillId: string | null;
   skillName: string;
   patch: string;
-  patchCompatibility: "exact" | "unsupported" | "unknown";
+  patchCompatibility: 'exact' | 'unsupported' | 'unknown';
   ailmentDps: number | null;
   burstDps: number | null;
   sustainedDps: number | null;
-  clearCoverage: "single-target" | "multi-target" | "unknown";
+  clearCoverage: 'single-target' | 'multi-target' | 'unknown';
   resourceBalance: { costPerSecond: number | null; recoveryPerSecond: number | null; sustainable: boolean | null };
   mechanicCoverage: MechanicCoverage;
   breakpointFailures: BreakpointFailure[];

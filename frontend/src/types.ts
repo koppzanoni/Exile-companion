@@ -88,67 +88,66 @@ export interface Estimate {
 export interface BuildFit {
   name: string;
   score: number;
-  fit: "weak" | "possible" | "strong";
+  fit: 'weak' | 'possible' | 'strong';
   reasons: string[];
   conflicts: string[];
 }
 export type BuildStat =
-  | "life"
-  | "mana"
-  | "energyShield"
-  | "armour"
-  | "evasion"
-  | "movementSpeed"
-  | "fireResistance"
-  | "coldResistance"
-  | "lightningResistance"
-  | "chaosResistance"
-  | "strength"
-  | "dexterity"
-  | "intelligence"
-  | "spirit"
-  | "rarityFind"
-  | "attacksPerSecond"
-  | "criticalHitChance"
-  | "physicalDps"
-  | "elementalDps";
+  | 'life'
+  | 'mana'
+  | 'energyShield'
+  | 'armour'
+  | 'evasion'
+  | 'movementSpeed'
+  | 'fireResistance'
+  | 'coldResistance'
+  | 'lightningResistance'
+  | 'chaosResistance'
+  | 'strength'
+  | 'dexterity'
+  | 'intelligence'
+  | 'spirit'
+  | 'rarityFind'
+  | 'attacksPerSecond'
+  | 'criticalHitChance'
+  | 'physicalDps'
+  | 'elementalDps';
 export interface BuildPriority {
   stat: BuildStat;
-  level: "required" | "high" | "useful";
+  level: 'required' | 'high' | 'useful';
   minimum?: number;
 }
-export type BuildProvider =
-  "Mobalytics" | "poe.ninja" | "Maxroll" | "PoE Vault" | "pobb.in";
+export type BuildProvider = 'Mobalytics' | 'poe.ninja' | 'Maxroll' | 'PoE Vault' | 'pobb.in';
 export interface PersonalizedBuildFit {
   buildName: string;
   className: string;
   score: number;
-  fit: "poor" | "partial" | "strong" | "excellent";
+  fit: 'poor' | 'partial' | 'strong' | 'excellent';
   verdict: string;
   matched: string[];
   missing: string[];
   conflicts: string[];
 }
 export type ItemCategory =
-  | "body-armour"
-  | "helmet"
-  | "gloves"
-  | "boots"
-  | "shield"
-  | "focus"
-  | "quiver"
-  | "ring"
-  | "amulet"
-  | "belt"
-  | "bow"
-  | "crossbow"
-  | "one-handed-melee"
-  | "two-handed-melee"
-  | "staff"
-  | "quarterstaff"
-  | "wand"
-  | "sceptre"
-  | "other";
+  | 'body-armour'
+  | 'helmet'
+  | 'gloves'
+  | 'boots'
+  | 'shield'
+  | 'focus'
+  | 'quiver'
+  | 'ring'
+  | 'amulet'
+  | 'belt'
+  | 'bow'
+  | 'crossbow'
+  | 'one-handed-melee'
+  | 'two-handed-melee'
+  | 'staff'
+  | 'quarterstaff'
+  | 'wand'
+  | 'sceptre'
+  | 'other';
 export interface ItemCategoryInfo {
   key: ItemCategory;
   label: string;
@@ -175,14 +174,14 @@ export interface CategoryAnalysis {
 }
 export interface BuildFitProfile {
   id: string;
-  source: "default" | "custom" | "generic";
+  source: 'default' | 'custom' | 'generic';
   name: string;
   className: string;
   ascendancy?: string;
   mainSkill: string;
   guideUrl?: string;
-  stage: "campaign" | "early-maps" | "established" | "transition" | "endgame" | "aspirational";
-  evaluationStyle: "balanced" | "campaign-race" | "hardcore-gauntlet";
+  stage: 'campaign' | 'early-maps' | 'established' | 'transition' | 'endgame' | 'aspirational';
+  evaluationStyle: 'balanced' | 'campaign-race' | 'hardcore-gauntlet';
   preferredWeaponTypes: ItemCategory[];
   damageTypes: string[];
   defensiveLayers: string[];
@@ -194,8 +193,7 @@ export interface BuildFitProfile {
   valuableSlots: ItemCategory[];
   categoryPriorities: Partial<Record<ItemCategory, string[]>>;
   explanationRules: string[];
-  defenceStyle:
-    "life-armour" | "life-evasion" | "energy-shield" | "hybrid" | "custom";
+  defenceStyle: 'life-armour' | 'life-evasion' | 'energy-shield' | 'hybrid' | 'custom';
   priorities: BuildPriority[];
   requiredMods: string[];
   desiredMods: string[];
@@ -206,17 +204,17 @@ export interface ImportedField {
   field: string;
   value: string;
   excerpt: string;
-  confidence: "High" | "Medium" | "Low";
+  confidence: 'High' | 'Medium' | 'Low';
   needsConfirmation: boolean;
 }
 export interface BuildImportResult {
   profile: BuildFitProfile;
-  source: "direct" | "reader";
+  source: 'direct' | 'reader';
   provider: BuildProvider;
   equipmentSummary: string;
   detected: string[];
   fields: ImportedField[];
-  method: "direct-html" | "jina-reader";
+  method: 'direct-html' | 'jina-reader';
   importedAt: string;
   partial: boolean;
   warnings: string[];
@@ -239,42 +237,27 @@ export interface BuildFitAnalysis {
   profileName: string;
   buildSpecific: boolean;
   score: number;
-  label: "Bad" | "Usable" | "Good" | "Great" | "Build-defining";
+  label: 'Bad' | 'Usable' | 'Good' | 'Great' | 'Build-defining';
   fitsBecause: string[];
   doesNotFitBecause: string[];
-  bestUseCase:
-    | "leveling"
-    | "campaign"
-    | "early maps"
-    | "endgame"
-    | "bossing"
-    | "niche"
-    | "vendor";
+  bestUseCase: 'leveling' | 'campaign' | 'early maps' | 'endgame' | 'bossing' | 'niche' | 'vendor';
   missingImportantStats: string[];
   wastedStats: string[];
-  recommendedAction:
-    "Use" | "Sell" | "Craft" | "Replace Soon" | "Vendor" | "Price Check";
+  recommendedAction: 'Use' | 'Sell' | 'Craft' | 'Replace Soon' | 'Vendor' | 'Price Check';
   confidence: number;
   warnings: string[];
 }
-export type ItemAction =
-  | "Use"
-  | "Sell"
-  | "Craft"
-  | "Replace Soon"
-  | "Price Check"
-  | "Vendor"
-  | "Keep for Later";
+export type ItemAction = 'Use' | 'Sell' | 'Craft' | 'Replace Soon' | 'Price Check' | 'Vendor' | 'Keep for Later';
 export interface CraftingPotential {
   score: number;
   label:
-    | "Do Not Craft"
-    | "Low Potential"
-    | "Maybe Craft"
-    | "Good Crafting Base"
-    | "High Potential"
-    | "Premium Crafting Base";
-  confidence: "Low" | "Medium" | "High";
+    | 'Do Not Craft'
+    | 'Low Potential'
+    | 'Maybe Craft'
+    | 'Good Crafting Base'
+    | 'High Potential'
+    | 'Premium Crafting Base';
+  confidence: 'Low' | 'Medium' | 'High';
   recommendation: string;
   reasons: string[];
   risks: string[];
@@ -294,15 +277,15 @@ export interface CraftingPotential {
 export interface AppSettings {
   divineToExalted: number;
   defaultLeague: string;
-  craftingRiskTolerance: "Low" | "Medium" | "High";
+  craftingRiskTolerance: 'Low' | 'Medium' | 'High';
   showCurrencyWarnings: boolean;
   conservativeCraftingRecommendations: boolean;
-  interfaceMode: "Beginner" | "Advanced";
+  interfaceMode: 'Beginner' | 'Advanced';
 }
 export interface NormalizedModifier {
   id: string;
   text: string;
-  type: "implicit" | "prefix" | "suffix" | "unknown";
+  type: 'implicit' | 'prefix' | 'suffix' | 'unknown';
   group?: string;
   tier?: number;
   minimumRoll?: number;
@@ -312,7 +295,7 @@ export interface NormalizedModifier {
   tags: string[];
   local: boolean;
   hybrid?: boolean;
-  confidence?: "High" | "Medium" | "Low";
+  confidence?: 'High' | 'Medium' | 'Low';
   crafted: boolean;
   desecrated: boolean;
 }
@@ -334,13 +317,13 @@ export interface CraftRoute {
     preconditions: string[];
     outcomes: string[];
     probability: string;
-    risk?: "low" | "medium" | "high" | "unknown";
+    risk?: 'low' | 'medium' | 'high' | 'unknown';
   }>;
   blocked: Array<{ action: string; reasons: string[] }>;
   unknownProbability: boolean;
 }
 export interface CraftComparison {
-  recommendation: "continue" | "sell" | "buy-instead" | "unknown";
+  recommendation: 'continue' | 'sell' | 'buy-instead' | 'unknown';
   reason: string;
 }
 export interface CraftPlan {
@@ -365,7 +348,7 @@ export interface KnowledgeStatus {
 }
 export interface ItemRecommendation {
   action: ItemAction;
-  confidence: "Low" | "Medium" | "High";
+  confidence: 'Low' | 'Medium' | 'High';
   shortReason: string;
   detailedReason: string[];
   secondaryAction?: ItemAction;
@@ -378,19 +361,19 @@ export interface ItemRecommendation {
   safeToVendor: boolean;
   manualPriceCheck: boolean;
   mayHaveHiddenValue: boolean;
-  bestUseCase: BuildFitAnalysis["bestUseCase"];
+  bestUseCase: BuildFitAnalysis['bestUseCase'];
 }
 export interface ModifierRollInsight {
   modifier: string;
   tier?: number;
   percentile: number;
-  label: "low" | "average" | "high" | "perfect";
+  label: 'low' | 'average' | 'high' | 'perfect';
 }
 export interface KnowledgeAssessment {
   ruleset: string;
   confidence: {
     score: number;
-    level: "low" | "medium" | "high";
+    level: 'low' | 'medium' | 'high';
     reasons: string[];
     warnings: string[];
   };
@@ -402,10 +385,10 @@ export interface KnowledgeAssessment {
 }
 export interface ItemEvaluation {
   score: number;
-  grade: "poor" | "basic" | "good" | "excellent" | "elite";
+  grade: 'poor' | 'basic' | 'good' | 'excellent' | 'elite';
   label: string;
   verdict: string;
-  marketability: "low" | "niche" | "broad";
+  marketability: 'low' | 'niche' | 'broad';
   strengths: string[];
   weaknesses: string[];
   buildFits: BuildFit[];
@@ -417,15 +400,15 @@ export interface ItemEvaluation {
   buildFitAnalysis?: BuildFitAnalysis;
 }
 export type ComparisonVerdict =
-  | "Clear Upgrade"
-  | "Small Upgrade"
-  | "Sidegrade"
-  | "Situational Upgrade"
-  | "Defensive Upgrade"
-  | "Offensive Upgrade"
-  | "Downgrade"
-  | "Not Comparable"
-  | "Needs Manual Review";
+  | 'Clear Upgrade'
+  | 'Small Upgrade'
+  | 'Sidegrade'
+  | 'Situational Upgrade'
+  | 'Defensive Upgrade'
+  | 'Offensive Upgrade'
+  | 'Downgrade'
+  | 'Not Comparable'
+  | 'Needs Manual Review';
 export interface CharacterTotals {
   fireResistance?: number;
   coldResistance?: number;
@@ -449,7 +432,7 @@ export interface ItemComparison {
   equippedCategory: ItemCategoryInfo;
   verdict: ComparisonVerdict;
   explanation: string;
-  confidence: "Low" | "Medium" | "High";
+  confidence: 'Low' | 'Medium' | 'High';
   scoreDelta: number;
   buildFitDelta?: number;
   personalizedDelta?: number;
@@ -465,18 +448,18 @@ export interface ItemComparison {
   recommendationImpact: string;
 }
 export type MarketDataSource =
-  "live" | "relaxed-live" | "insufficient-live" | "similarity-fallback" | "cache" | "manual" | "none";
+  'live' | 'relaxed-live' | 'insufficient-live' | 'similarity-fallback' | 'cache' | 'manual' | 'none';
 export interface ValuedComparable {
   id: string;
   price: number;
-  currency: "exalted" | "divine";
+  currency: 'exalted' | 'divine';
   similarity: number;
   baseType: string;
   account?: string;
   indexedAt?: string;
   exaltedPrice: number;
   ageDays: number | null;
-  status: "used" | "rejected";
+  status: 'used' | 'rejected';
   rejectedReason?: string;
 }
 export interface MarketValuation {
@@ -485,8 +468,8 @@ export interface MarketValuation {
   listingPrice: number;
   lower: number;
   upper: number;
-  currency: "exalted";
-  confidence: "High" | "Medium" | "Low";
+  currency: 'exalted';
+  confidence: 'High' | 'Medium' | 'Low';
   confidenceScore: number;
   lowConfidenceReason?: string;
   sampleSize: number;
@@ -505,7 +488,7 @@ export interface MarketValuation {
   averageSimilarity: number;
   outliers: ValuedComparable[];
   priceFixSuspects: ValuedComparable[];
-  liquidity: "unknown" | "low" | "medium" | "high";
+  liquidity: 'unknown' | 'low' | 'medium' | 'high';
   liquidityBasis: string;
   comparablesUsed: ValuedComparable[];
   comparablesRejected: ValuedComparable[];
@@ -535,11 +518,11 @@ export interface StatContribution {
   stat: string;
   value: number;
   score: number;
-  category: "offence" | "defence" | "utility";
+  category: 'offence' | 'defence' | 'utility';
   reason: string;
   conditional: boolean;
   wasted: boolean;
-  source: "parsed" | "derived";
+  source: 'parsed' | 'derived';
   local: boolean;
   tier?: number;
   buildWeight: number;
@@ -561,7 +544,7 @@ export interface StatValuation {
 }
 export interface EvaluationFactor {
   score: number;
-  confidence: "High" | "Medium" | "Low";
+  confidence: 'High' | 'Medium' | 'Low';
   summary: string;
   positiveFactors: string[];
   negativeFactors: string[];
@@ -574,7 +557,7 @@ export interface FourEvaluations {
   marketValue: EvaluationFactor;
   craftPotential: EvaluationFactor;
 }
-export type MainDecisionAction = "Use" | "Sell" | "Craft" | "Keep" | "Discard";
+export type MainDecisionAction = 'Use' | 'Sell' | 'Craft' | 'Keep' | 'Discard';
 export interface MainDecision {
   action: MainDecisionAction;
   reason: string;
@@ -594,7 +577,7 @@ export interface OpportunityAnalysis {
     qualityGain: number;
     listing: Listing;
   } | null;
-  buyVsCraft: { verdict: "buy" | "craft" | "unknown"; reason: string };
+  buyVsCraft: { verdict: 'buy' | 'craft' | 'unknown'; reason: string };
   wastedExpensiveStats: string[];
   sellingWouldEnableBetterPurchase: { possible: boolean; reason: string };
   bestAlternativeSearchUrl?: string;
@@ -605,7 +588,7 @@ export interface AIAnalysisResult {
   summary: string;
   itemCategory: string;
   buildFitScore: number;
-  recommendation: "equip" | "sell" | "craft" | "ignore" | "price_check";
+  recommendation: 'equip' | 'sell' | 'craft' | 'ignore' | 'price_check';
   strongStats: Array<{ stat: string; reason: string }>;
   weakStats: Array<{ stat: string; reason: string }>;
   craftingSuggestions: Array<{
@@ -621,7 +604,7 @@ export interface AIAnalysisResult {
     available: boolean;
     low?: number;
     high?: number;
-    currency?: "exalted";
+    currency?: 'exalted';
     reason: string;
     confidence: number;
     limitations: string[];
@@ -640,14 +623,13 @@ export interface AIAnalysisResult {
   };
 }
 export type AIAnalysis =
-  | { available: true; model: string; result: AIAnalysisResult }
-  | { available: false; reason: string };
+  { available: true; model: string; result: AIAnalysisResult } | { available: false; reason: string };
 export interface SourceEvidence {
   label: string;
   url: string;
   patch: string;
   dataVersion: string;
-  confidence: "High" | "Medium" | "Low";
+  confidence: 'High' | 'Medium' | 'Low';
   inspectedAt: string;
   limitation?: string;
 }
@@ -656,20 +638,20 @@ export interface BreakpointFailure {
   message: string;
   required?: number;
   available?: number;
-  severity: "blocking" | "warning";
+  severity: 'blocking' | 'warning';
 }
 export interface OffenceResult {
   skillId: string | null;
   skillName: string;
   patch: string;
-  patchCompatibility: "exact" | "unsupported" | "unknown";
+  patchCompatibility: 'exact' | 'unsupported' | 'unknown';
   ailmentDps: number | null;
   burstDps: number | null;
   sustainedDps: number | null;
-  clearCoverage: "single-target" | "multi-target" | "unknown";
+  clearCoverage: 'single-target' | 'multi-target' | 'unknown';
   resourceBalance: { costPerSecond: number | null; recoveryPerSecond: number | null; sustainable: boolean | null };
   mechanicCoverage: {
-    status: "complete" | "partial" | "unknown";
+    status: 'complete' | 'partial' | 'unknown';
     covered: string[];
     missing: string[];
     ignored: string[];
@@ -680,17 +662,55 @@ export interface OffenceResult {
   assumptions: string[];
   missingInputs: string[];
   sourceEvidence: SourceEvidence[];
-  confidence: "High" | "Medium" | "Low";
+  confidence: 'High' | 'Medium' | 'Low';
 }
 export interface AnalysisFoundations {
-  rosterCompatibility:{recognized:boolean;patchCompatibility:"exact"|"unsupported"|"unknown";issues:string[];catalogPatch:string;dataVersion:string;status:"active"|"fallback";source:string;confidence:"High"|"Medium"|"Low";limitations:string[]};
-  actorScopeCoverage:Record<string,{coverage:"complete"|"partial";unknown:unknown[]}>;
-  spiritFeasibility:{availableSpirit:number|null;reservedSpirit:number|null;remainingSpirit:number|null;activeRoster:string[];disabledSkills:string[];disabledCompanions:string[];invalidRequirements:string[];weaponSet:1|2|null;missingInputs:string[];confidence:"High"|"Low";exactFeasibilityAvailable:boolean;valid:boolean|null};
-  ascendancyMechanicCoverage:Array<{id:string;label:string;status:"confirmed"|"partial"|"scenario-required"|"unknown";actor:string;limitation:string;sourceEvidence:SourceEvidence[]}>;
-  ascendancyMechanicModeled:boolean;
-  idolatry:{resistancePenalty:number|null;missingInputs:string[];sourceEvidence?:SourceEvidence[]}|null;
-  transitionBundle:{complete:boolean;missingSignals:string[];recommendationAllowed:boolean;reason:string}|null;
-  criticalRegressions:string[];assumptions:string[];missingInputs:string[];sourceEvidence:SourceEvidence[];
+  rosterCompatibility: {
+    recognized: boolean;
+    patchCompatibility: 'exact' | 'unsupported' | 'unknown';
+    issues: string[];
+    catalogPatch: string;
+    dataVersion: string;
+    status: 'active' | 'fallback';
+    source: string;
+    confidence: 'High' | 'Medium' | 'Low';
+    limitations: string[];
+  };
+  actorScopeCoverage: Record<string, { coverage: 'complete' | 'partial'; unknown: unknown[] }>;
+  spiritFeasibility: {
+    availableSpirit: number | null;
+    reservedSpirit: number | null;
+    remainingSpirit: number | null;
+    activeRoster: string[];
+    disabledSkills: string[];
+    disabledCompanions: string[];
+    invalidRequirements: string[];
+    weaponSet: 1 | 2 | null;
+    missingInputs: string[];
+    confidence: 'High' | 'Low';
+    exactFeasibilityAvailable: boolean;
+    valid: boolean | null;
+  };
+  ascendancyMechanicCoverage: Array<{
+    id: string;
+    label: string;
+    status: 'confirmed' | 'partial' | 'scenario-required' | 'unknown';
+    actor: string;
+    limitation: string;
+    sourceEvidence: SourceEvidence[];
+  }>;
+  ascendancyMechanicModeled: boolean;
+  idolatry: { resistancePenalty: number | null; missingInputs: string[]; sourceEvidence?: SourceEvidence[] } | null;
+  transitionBundle: {
+    complete: boolean;
+    missingSignals: string[];
+    recommendationAllowed: boolean;
+    reason: string;
+  } | null;
+  criticalRegressions: string[];
+  assumptions: string[];
+  missingInputs: string[];
+  sourceEvidence: SourceEvidence[];
 }
 export interface Analysis {
   id?: number;
@@ -714,24 +734,15 @@ export interface Analysis {
     buildProfile: {
       id: string;
       name: string;
-      source: "default" | "custom" | "generic";
+      source: 'default' | 'custom' | 'generic';
     };
-    characterTotalsSource:
-      "saved-character-plus-request" | "request" | "unknown";
+    characterTotalsSource: 'saved-character-plus-request' | 'request' | 'unknown';
     replacementAware: boolean;
-    requirements: Partial<
-      Record<"strength" | "dexterity" | "intelligence" | "spirit", number>
-    >;
+    requirements: Partial<Record<'strength' | 'dexterity' | 'intelligence' | 'spirit', number>>;
     resistanceCaps: Partial<
-      Record<
-        | "fireResistance"
-        | "coldResistance"
-        | "lightningResistance"
-        | "chaosResistance",
-        number
-      >
+      Record<'fireResistance' | 'coldResistance' | 'lightningResistance' | 'chaosResistance', number>
     >;
-    meta: { status: "unknown"; reason: string };
+    meta: { status: 'unknown'; reason: string };
   };
   evaluations?: FourEvaluations;
   decision?: MainDecision;
@@ -740,21 +751,21 @@ export interface Analysis {
   aiAnalysis?: AIAnalysis;
   offenceResult?: OffenceResult;
   equippedOffenceResult?: OffenceResult;
-  mechanicCoverage?: OffenceResult["mechanicCoverage"];
+  mechanicCoverage?: OffenceResult['mechanicCoverage'];
   exactDpsAvailable?: boolean;
   breakpointFailures?: BreakpointFailure[];
   assumptions?: string[];
   missingInputs?: string[];
   sourceEvidence?: SourceEvidence[];
-  patchCompatibility?: OffenceResult["patchCompatibility"];
-  rosterCompatibility?:AnalysisFoundations["rosterCompatibility"];
-  actorScopeCoverage?:AnalysisFoundations["actorScopeCoverage"];
-  spiritFeasibility?:AnalysisFoundations["spiritFeasibility"];
-  ascendancyMechanicCoverage?:AnalysisFoundations["ascendancyMechanicCoverage"];
-  ascendancyMechanicModeled?:AnalysisFoundations["ascendancyMechanicModeled"];
-  idolatry?:AnalysisFoundations["idolatry"];
-  transitionBundle?:AnalysisFoundations["transitionBundle"];
-  criticalRegressions?:string[];
+  patchCompatibility?: OffenceResult['patchCompatibility'];
+  rosterCompatibility?: AnalysisFoundations['rosterCompatibility'];
+  actorScopeCoverage?: AnalysisFoundations['actorScopeCoverage'];
+  spiritFeasibility?: AnalysisFoundations['spiritFeasibility'];
+  ascendancyMechanicCoverage?: AnalysisFoundations['ascendancyMechanicCoverage'];
+  ascendancyMechanicModeled?: AnalysisFoundations['ascendancyMechanicModeled'];
+  idolatry?: AnalysisFoundations['idolatry'];
+  transitionBundle?: AnalysisFoundations['transitionBundle'];
+  criticalRegressions?: string[];
   timestamp: string;
 }
 export interface RaceReview {
@@ -765,7 +776,7 @@ export interface RaceReview {
   itemCategory?: string;
   createdAt: string;
 }
-export type LevelingVerdict = "buy-now" | "wait" | "not-worth-it";
+export type LevelingVerdict = 'buy-now' | 'wait' | 'not-worth-it';
 export interface LevelingListing {
   id: string;
   slot: string;
@@ -792,7 +803,7 @@ export interface LevelingSlotResult {
 }
 export interface LevelingSearchResult {
   profile: BuildProfile;
-  source: "direct" | "reader";
+  source: 'direct' | 'reader';
   provider: BuildProvider;
   warnings: string[];
   level: number;
@@ -839,7 +850,7 @@ export interface SlotDiagnosis {
     stat: string;
     value: number;
     score: number;
-    category: "offence" | "defence" | "utility";
+    category: 'offence' | 'defence' | 'utility';
     reason: string;
     conditional: boolean;
     wasted: boolean;
@@ -859,11 +870,11 @@ export interface DependencyAlert {
   original?: string;
 }
 export type DiagnosticMessageCode =
-  | "equipment.empty"
-  | "spirit.target_unknown"
-  | "budget.relative_only"
-  | "swap.attribute_dependency"
-  | "swap.resistance_dependency";
+  | 'equipment.empty'
+  | 'spirit.target_unknown'
+  | 'budget.relative_only'
+  | 'swap.attribute_dependency'
+  | 'swap.resistance_dependency';
 export interface DiagnosticMessage {
   code: DiagnosticMessageCode;
   params: Record<string, string | number>;
@@ -872,18 +883,18 @@ export interface DiagnosticMessage {
 export interface UpgradeOrderEntry {
   slot: string;
   reason: string;
-  budgetPriority: "High" | "Medium" | "Low";
+  budgetPriority: 'High' | 'Medium' | 'Low';
 }
 export interface BuildDoctorResult {
   offenceResult?: OffenceResult;
-  rosterCompatibility?:AnalysisFoundations["rosterCompatibility"];
-  actorScopeCoverage?:AnalysisFoundations["actorScopeCoverage"];
-  spiritFeasibility?:AnalysisFoundations["spiritFeasibility"];
-  ascendancyMechanicCoverage?:AnalysisFoundations["ascendancyMechanicCoverage"];
-  ascendancyMechanicModeled?:AnalysisFoundations["ascendancyMechanicModeled"];
-  idolatry?:AnalysisFoundations["idolatry"];
-  transitionBundle?:AnalysisFoundations["transitionBundle"];
-  criticalRegressions?:string[];
+  rosterCompatibility?: AnalysisFoundations['rosterCompatibility'];
+  actorScopeCoverage?: AnalysisFoundations['actorScopeCoverage'];
+  spiritFeasibility?: AnalysisFoundations['spiritFeasibility'];
+  ascendancyMechanicCoverage?: AnalysisFoundations['ascendancyMechanicCoverage'];
+  ascendancyMechanicModeled?: AnalysisFoundations['ascendancyMechanicModeled'];
+  idolatry?: AnalysisFoundations['idolatry'];
+  transitionBundle?: AnalysisFoundations['transitionBundle'];
+  criticalRegressions?: string[];
   profile: {
     build: {
       name: string;
@@ -895,7 +906,7 @@ export interface BuildDoctorResult {
       damageTypes: string[];
     };
     overallScore: number;
-    status: "Critical gaps" | "Needs work" | "Functional" | "Strong";
+    status: 'Critical gaps' | 'Needs work' | 'Functional' | 'Strong';
     equipmentCoverage: { filled: number; total: number; percent: number };
     strengths: string[];
     gaps: string[];
@@ -928,12 +939,7 @@ export interface BuildDoctorResult {
 }
 export interface BuildSwapSimulation {
   slot: string;
-  verdict:
-    | "Clear upgrade"
-    | "Small upgrade"
-    | "Sidegrade"
-    | "Risky sidegrade"
-    | "Downgrade";
+  verdict: 'Clear upgrade' | 'Small upgrade' | 'Sidegrade' | 'Risky sidegrade' | 'Downgrade';
   scoreDelta: number;
   beforeScore: number;
   afterScore: number;
@@ -948,18 +954,18 @@ export interface GeminiChatResponse {
   reason?: string;
   result?: {
     answer: string;
-    confidence: "Low" | "Medium" | "High";
+    confidence: 'Low' | 'Medium' | 'High';
     factsUsed: string[];
     suggestedActions: Array<{
       label: string;
       action:
-        | "inspect_slot"
-        | "simulate_swap"
-        | "search_upgrade"
-        | "view_shopping_plan"
-        | "review_price"
-        | "compare_market"
-        | "none";
+        | 'inspect_slot'
+        | 'simulate_swap'
+        | 'search_upgrade'
+        | 'view_shopping_plan'
+        | 'review_price'
+        | 'compare_market'
+        | 'none';
       slot?: string;
       reason: string;
     }>;
@@ -971,7 +977,7 @@ export interface UpgradeCandidateInput {
   slot: string;
   itemText: string;
   price: number;
-  currency: "exalted";
+  currency: 'exalted';
 }
 export interface RankedUpgradeCandidate {
   id: string;
@@ -981,12 +987,7 @@ export interface RankedUpgradeCandidate {
   afterScore: number;
   scoreDelta: number;
   valuePerExalted: number;
-  verdict:
-    | "Clear upgrade"
-    | "Small upgrade"
-    | "Sidegrade"
-    | "Risky sidegrade"
-    | "Downgrade";
+  verdict: 'Clear upgrade' | 'Small upgrade' | 'Sidegrade' | 'Risky sidegrade' | 'Downgrade';
   newGaps: string[];
   resolvedGaps: string[];
 }
@@ -1034,7 +1035,7 @@ export interface CharacterInput {
   className?: string;
   ascendancy?: string;
   buildProfileId?: string;
-  stage?: "campaign" | "early-maps" | "established" | "transition" | "endgame" | "aspirational";
+  stage?: 'campaign' | 'early-maps' | 'established' | 'transition' | 'endgame' | 'aspirational';
   budget?: number;
   targetContent?: string;
   currentIssues?: string;
@@ -1047,8 +1048,8 @@ export interface LoadoutSkill {
 }
 export interface CharacterBuildLoadout {
   patch: string;
-  source: "manual" | "poe-api" | "imported";
-  confidence: "Low" | "Medium" | "High";
+  source: 'manual' | 'poe-api' | 'imported';
+  confidence: 'Low' | 'Medium' | 'High';
   mainSkill: string;
   weaponSet: string;
   availableSpirit?: number;
@@ -1063,7 +1064,7 @@ export interface CharacterBuildKnowledge {
     dependencies: Array<{
       from: string;
       to: string;
-      kind: "support" | "weapon" | "passive" | "spirit";
+      kind: 'support' | 'weapon' | 'passive' | 'spirit';
     }>;
     warnings: string[];
   };
@@ -1075,14 +1076,14 @@ export interface CharacterBuildKnowledge {
       reasons: string[];
     }>;
     sampleSize: number;
-    confidence: "Low" | "Medium" | "High";
+    confidence: 'Low' | 'Medium' | 'High';
     limitation: string;
   };
   provenance: { patch: string; source: string; confidence: string };
 }
 export interface LoadoutSimulation {
-  before: CharacterBuildKnowledge["analysis"];
-  after: CharacterBuildKnowledge["analysis"];
+  before: CharacterBuildKnowledge['analysis'];
+  after: CharacterBuildKnowledge['analysis'];
   spiritDelta: number;
   newWarnings: string[];
   resolvedWarnings: string[];
@@ -1097,7 +1098,7 @@ export interface CharacterActionPlan {
     rank: number;
     slot: string;
     reason: string;
-    priority: "High" | "Medium" | "Low";
+    priority: 'High' | 'Medium' | 'Low';
     suggestedBudget: number;
     tradeUrl: string | null;
     requiresEquippedItem: boolean;
@@ -1109,9 +1110,9 @@ export interface ShoppingPlanItem {
   id: number;
   slot: string;
   reason: string;
-  priority: "High" | "Medium" | "Low";
+  priority: 'High' | 'Medium' | 'Low';
   suggestedBudget: number;
-  status: "searching" | "candidate" | "bought" | "discarded";
+  status: 'searching' | 'candidate' | 'bought' | 'discarded';
   listingId?: string;
   itemText?: string;
   price?: number;
@@ -1120,9 +1121,7 @@ export interface ShoppingPlanItem {
   updatedAt: string;
 }
 export interface MarketUpgradeCandidates {
-  candidates: Array<
-    RankedUpgradeCandidate & { itemText?: string; listing?: Listing }
-  >;
+  candidates: Array<RankedUpgradeCandidate & { itemText?: string; listing?: Listing }>;
   dataSource: MarketDataSource;
   sampleSize: number;
   warning: string;
@@ -1150,7 +1149,7 @@ export interface ReplacementSaleDraft {
   purchaseId: number;
   slot: string;
   itemText: string;
-  status: "needs-price" | "listed";
+  status: 'needs-price' | 'listed';
   createdAt: string;
 }
 export interface CharacterEvolution {
@@ -1187,7 +1186,7 @@ export interface NetUpgradeCosts {
 export interface CharacterAlert {
   id: number;
   type: string;
-  severity: "info" | "warning" | "critical";
+  severity: 'info' | 'warning' | 'critical';
   message: string;
   metadataJson?: string;
   readAt?: string;
@@ -1200,7 +1199,7 @@ export interface RecommendationCalibration {
     slot: string;
     count: number;
     averageError: number;
-    confidence: "Low" | "Medium" | "High";
+    confidence: 'Low' | 'Medium' | 'High';
   }>;
   rows: Array<Record<string, unknown>>;
   limitation: string;
@@ -1210,13 +1209,13 @@ export interface ReconciliationResult {
     slot: string;
     localItemText: string;
     officialItemText: string;
-    status: "official-only" | "local-only" | "changed";
+    status: 'official-only' | 'local-only' | 'changed';
   }>;
   applied: boolean;
   requiresConfirmation: boolean;
 }
 export interface PublicCharacterProfile {
-  source: "poe.ninja-public-profile";
+  source: 'poe.ninja-public-profile';
   sourceUrl: string;
   importedAt: string;
   updatedAt: string | null;
@@ -1260,21 +1259,21 @@ export interface PublicCharacterProfile {
   equipmentCount: number;
   provenance: {
     publicProfile: boolean;
-    confidence: "High";
+    confidence: 'High';
     limitations: string[];
   };
 }
 export interface ProfileDiagnostic {
-  severity: "critical" | "warning" | "info";
+  severity: 'critical' | 'warning' | 'info';
   category: string;
   message: string;
   evidence: string;
-  confidence: "High" | "Medium";
+  confidence: 'High' | 'Medium';
 }
 export interface ProfileCatalogStatus {
-  passiveTree: { status: "supported" | "unsupported"; reason?: string };
-  quests: { status: "supported" | "unsupported"; reason?: string };
-  ascendancy: { status: "supported" | "unsupported"; reason?: string };
+  passiveTree: { status: 'supported' | 'unsupported'; reason?: string };
+  quests: { status: 'supported' | 'unsupported'; reason?: string };
+  ascendancy: { status: 'supported' | 'unsupported'; reason?: string };
 }
 export interface PublicProfileSnapshot {
   id: number;
@@ -1302,7 +1301,7 @@ export interface CraftingItemState {
   itemClass: string;
   baseType: string;
   itemLevel?: number;
-  rarity: "normal" | "magic" | "rare" | "unique";
+  rarity: 'normal' | 'magic' | 'rare' | 'unique';
   quality: number;
   corrupted: boolean;
   prefixes: NormalizedModifier[];
@@ -1327,10 +1326,10 @@ export interface ActionEvaluation {
   legal: boolean;
   reasons: string[];
   reversible: false;
-  outcomeCertainty: "guaranteed" | "random-from-pool";
+  outcomeCertainty: 'guaranteed' | 'random-from-pool';
   knownChance?: number;
   accumulatedCostCount: number;
-  risk: "low" | "medium" | "high" | "unknown";
+  risk: 'low' | 'medium' | 'high' | 'unknown';
   recommendedStop: boolean;
   stopReason?: string;
 }
@@ -1339,7 +1338,7 @@ export interface CraftingCurrencyDef {
   label: string;
   effect: string;
   compatibleRarities: string[];
-  outcomeCertainty: "guaranteed" | "random-from-pool";
+  outcomeCertainty: 'guaranteed' | 'random-from-pool';
   knownChance?: number;
   notes?: string;
 }
@@ -1368,16 +1367,16 @@ export interface MarketSnapshot {
   maximumLikelyPrice: number;
   sampleSize: number;
   distinctSellers: number;
-  liquidity: "unknown" | "low" | "medium" | "high";
+  liquidity: 'unknown' | 'low' | 'medium' | 'high';
   priceFixSuspectCount: number;
-  confidence: "High" | "Medium" | "Low";
+  confidence: 'High' | 'Medium' | 'Low';
   createdAt: string;
 }
 export interface MarketHistoryResult {
   baseType: string;
   league: string;
   snapshots: MarketSnapshot[];
-  trend: "rising" | "falling" | "stable" | "unknown";
+  trend: 'rising' | 'falling' | 'stable' | 'unknown';
   changePercent: number | null;
   priceFixFlaggedSnapshots: number;
   limitations: string[];
@@ -1400,7 +1399,7 @@ export interface CatalogVersion {
   patch: string;
   dataVersion: string;
   source: string;
-  status: "staged" | "active" | "rolled-back" | "deprecated";
+  status: 'staged' | 'active' | 'rolled-back' | 'deprecated';
   entryCount: number;
   regression: RegressionResult;
   compare: CompareResult;

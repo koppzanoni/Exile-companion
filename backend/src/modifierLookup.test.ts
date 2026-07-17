@@ -5,7 +5,14 @@ import { lookupModifier, loadModifierCatalog } from './modifierLookup.js';
 describe('modifier catalog lookup', () => {
   it('classifies a known global modifier with medium confidence and no invented tier', () => {
     const result = lookupModifier(defaultModifierCatalog, '+45 to maximum Life');
-    expect(result).toMatchObject({ id: 'life', group: 'MaximumLife', type: 'prefix', local: false, method: 'catalog', confidence: 'Medium' });
+    expect(result).toMatchObject({
+      id: 'life',
+      group: 'MaximumLife',
+      type: 'prefix',
+      local: false,
+      method: 'catalog',
+      confidence: 'Medium',
+    });
   });
 
   it('classifies known local weapon modifiers as local, not global', () => {

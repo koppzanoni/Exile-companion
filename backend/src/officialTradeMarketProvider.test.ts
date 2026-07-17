@@ -1,2 +1,29 @@
-import {describe,expect,it,vi} from 'vitest';import {OfficialTradeMarketProvider} from './officialTradeMarketProvider.js';
-describe('official market provider',()=>{it('caches successful evidence',async()=>{const search=vi.fn().mockResolvedValue([{price:2}]);const provider=new OfficialTradeMarketProvider({search},{timeoutMs:100,cacheMs:1000,minIntervalMs:0,retries:0});const query={league:'Standard',patch:'x',itemClass:'Boots',filters:{}};await provider.search(query);const cached=await provider.search(query);expect(search).toHaveBeenCalledTimes(1);expect(cached.warning).toMatch(/Cached/);});it('returns an explicit unavailable result instead of inventing listings',async()=>{const provider=new OfficialTradeMarketProvider({search:async()=>{throw new Error('rate limited');}},{timeoutMs:10,cacheMs:1,minIntervalMs:0,retries:1});const result=await provider.search({league:'x',patch:'x',itemClass:'',filters:{}});expect(result.listings).toEqual([]);expect(result.warning).toMatch(/No price was inferred/);});});
+import { describe, expect, it, vi } from 'vitest';
+import { OfficialTradeMarketProvider } from './officialTradeMarketProvider.js';
+describe('official market provider', () => {
+  it('caches successful evidence', async () => {
+    const search = vi.fn().mockResolvedValue([{ price: 2 }]);
+    const provider = new OfficialTradeMarketProvider(
+      { search },
+      { timeoutMs: 100, cacheMs: 1000, minIntervalMs: 0, retries: 0 },
+    );
+    const query = { league: 'Standard', patch: 'x', itemClass: 'Boots', filters: {} };
+    await provider.search(query);
+    const cached = await provider.search(query);
+    expect(search).toHaveBeenCalledTimes(1);
+    expect(cached.warning).toMatch(/Cached/);
+  });
+  it('returns an explicit unavailable result instead of inventing listings', async () => {
+    const provider = new OfficialTradeMarketProvider(
+      {
+        search: async () => {
+          throw new Error('rate limited');
+        },
+      },
+      { timeoutMs: 10, cacheMs: 1, minIntervalMs: 0, retries: 1 },
+    );
+    const result = await provider.search({ league: 'x', patch: 'x', itemClass: '', filters: {} });
+    expect(result.listings).toEqual([]);
+    expect(result.warning).toMatch(/No price was inferred/);
+  });
+});

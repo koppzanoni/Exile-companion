@@ -1,4 +1,4 @@
-import type { ItemCategory, ItemStats } from "./types.js";
+import type { ItemCategory, ItemStats } from './types.js';
 import {
   ATTRIBUTE_TARGET,
   BLOCK_CHANCE_TARGET,
@@ -13,14 +13,9 @@ import {
   physicalDpsTarget,
   resolveItemLevel,
   runicWardTarget,
-} from "./statTargets.js";
-import { scoreResistanceAgainstCap } from "./resistanceCapScoring.js";
-export {
-  deriveBuildWeights,
-  deriveCritical,
-  deriveDamageTags,
-  deriveSlotWeights,
-} from "./buildScoringContext.js";
+} from './statTargets.js';
+import { scoreResistanceAgainstCap } from './resistanceCapScoring.js';
+export { deriveBuildWeights, deriveCritical, deriveDamageTags, deriveSlotWeights } from './buildScoringContext.js';
 
 export interface StatValuationContext {
   slot: ItemCategory;
@@ -38,18 +33,8 @@ export interface StatValuationContext {
     dexterity?: number;
     intelligence?: number;
   };
-  requirements?: Partial<
-    Record<"spirit" | "strength" | "dexterity" | "intelligence", number>
-  >;
-  caps?: Partial<
-    Record<
-      | "fireResistance"
-      | "coldResistance"
-      | "lightningResistance"
-      | "chaosResistance",
-      number
-    >
-  >;
+  requirements?: Partial<Record<'spirit' | 'strength' | 'dexterity' | 'intelligence', number>>;
+  caps?: Partial<Record<'fireResistance' | 'coldResistance' | 'lightningResistance' | 'chaosResistance', number>>;
   buildWeight?: Partial<Record<string, number>>;
   slotWeight?: Partial<Record<string, number>>;
 }
@@ -57,11 +42,11 @@ export interface StatContribution {
   stat: string;
   value: number;
   score: number;
-  category: "offence" | "defence" | "utility";
+  category: 'offence' | 'defence' | 'utility';
   reason: string;
   conditional: boolean;
   wasted: boolean;
-  source: "parsed" | "derived";
+  source: 'parsed' | 'derived';
   local: boolean;
   tier?: number;
   buildWeight: number;
@@ -84,25 +69,20 @@ export interface StatValuation {
 
 const DEFAULT_WEIGHT = 1;
 
-export function valueItemStats(
-  item: ItemStats,
-  context: StatValuationContext,
-): StatValuation {
+export function valueItemStats(item: ItemStats, context: StatValuationContext): StatValuation {
   const contributions: StatContribution[] = [];
   const warnings: string[] = [];
-  const weightFor = (stat: string) =>
-    context.buildWeight?.[stat] ?? DEFAULT_WEIGHT;
-  const slotWeightFor = (stat: string) =>
-    context.slotWeight?.[stat] ?? DEFAULT_WEIGHT;
+  const weightFor = (stat: string) => context.buildWeight?.[stat] ?? DEFAULT_WEIGHT;
+  const slotWeightFor = (stat: string) => context.slotWeight?.[stat] ?? DEFAULT_WEIGHT;
   const add = (
     entry: Omit<
       StatContribution,
-      | "buildWeight"
-      | "slotWeight"
-      | "offenceContribution"
-      | "defenceContribution"
-      | "utilityContribution"
-      | "requirementContribution"
+      | 'buildWeight'
+      | 'slotWeight'
+      | 'offenceContribution'
+      | 'defenceContribution'
+      | 'utilityContribution'
+      | 'requirementContribution'
     > & { requirementDriven?: boolean },
   ) => {
     const buildWeight = weightFor(entry.stat);
@@ -112,10 +92,9 @@ export function valueItemStats(
       ...entry,
       buildWeight,
       slotWeight,
-      offenceContribution: entry.category === "offence" ? entry.score : 0,
-      defenceContribution: entry.category === "defence" ? entry.score : 0,
-      utilityContribution:
-        entry.category === "utility" && !requirementDriven ? entry.score : 0,
+      offenceContribution: entry.category === 'offence' ? entry.score : 0,
+      defenceContribution: entry.category === 'defence' ? entry.score : 0,
+      utilityContribution: entry.category === 'utility' && !requirementDriven ? entry.score : 0,
       requirementContribution: requirementDriven ? entry.score : 0,
     });
   };
@@ -125,25 +104,25 @@ export function valueItemStats(
 
   if (item.life)
     add({
-      stat: "Maximum Life",
+      stat: 'Maximum Life',
       value: item.life,
       score: diminishing(item.life, lifeTarget(level)),
-      category: "defence",
-      reason: "Increases the life pool with diminishing returns at high rolls.",
+      category: 'defence',
+      reason: 'Increases the life pool with diminishing returns at high rolls.',
       conditional: false,
       wasted: false,
-      source: "parsed",
+      source: 'parsed',
       local: false,
       effectiveBeforeCap: item.life,
       effectiveAfterCap: item.life,
     });
 
   const localDefences: Array<[keyof ItemStats, string, number]> = [
-    ["armour", "Armour", defensiveTarget("armour", context.slot)],
-    ["evasion", "Evasion", defensiveTarget("evasion", context.slot)],
-    ["energyShield", "Energy Shield", energyShieldTarget(context.slot)],
-    ["deflection", "Deflection", deflectionTarget(context.slot)],
-    ["runicWard", "Runic Ward", runicWardTarget(context.slot)],
+    ['armour', 'Armour', defensiveTarget('armour', context.slot)],
+    ['evasion', 'Evasion', defensiveTarget('evasion', context.slot)],
+    ['energyShield', 'Energy Shield', energyShieldTarget(context.slot)],
+    ['deflection', 'Deflection', deflectionTarget(context.slot)],
+    ['runicWard', 'Runic Ward', runicWardTarget(context.slot)],
   ];
   for (const [key, label, target] of localDefences) {
     const value = item[key] as number | undefined;
@@ -152,42 +131,36 @@ export function valueItemStats(
       stat: label,
       value,
       score: diminishing(value, target),
-      category: "defence",
+      category: 'defence',
       reason: `Local defensive value on this item's own base (${label.toLowerCase()} is not shared across the character).`,
       conditional: false,
       wasted: false,
-      source: "parsed",
+      source: 'parsed',
       local: true,
       effectiveBeforeCap: value,
       effectiveAfterCap: value,
     });
   }
 
-  if (context.slot === "shield") {
+  if (context.slot === 'shield') {
     const block = (item.blockChance || 0) + (item.increasedBlockChance || 0);
     if (block)
       add({
-        stat: "Block chance",
+        stat: 'Block chance',
         value: block,
         score: diminishing(block, BLOCK_CHANCE_TARGET),
-        category: "defence",
-        reason:
-          "Chance to fully avoid a hit; combines base and increased block chance.",
+        category: 'defence',
+        reason: 'Chance to fully avoid a hit; combines base and increased block chance.',
         conditional: false,
         wasted: false,
-        source: "parsed",
+        source: 'parsed',
         local: true,
         effectiveBeforeCap: block,
         effectiveAfterCap: block,
       });
   }
 
-  for (const stat of [
-    "fireResistance",
-    "coldResistance",
-    "lightningResistance",
-    "chaosResistance",
-  ] as const) {
+  for (const stat of ['fireResistance', 'coldResistance', 'lightningResistance', 'chaosResistance'] as const) {
     const value = item[stat] || 0;
     if (!value) continue;
     const cap = context.caps?.[stat] ?? RESISTANCE_CAP_DEFAULT;
@@ -197,23 +170,18 @@ export function valueItemStats(
       stat,
       value,
       score: result.score,
-      category: "defence",
+      category: 'defence',
       reason: result.reason,
       conditional: true,
       wasted: result.wasted,
-      source: "parsed",
+      source: 'parsed',
       local: false,
       effectiveBeforeCap: value,
       effectiveAfterCap: result.effectiveAfterCap,
     });
   }
 
-  for (const stat of [
-    "strength",
-    "dexterity",
-    "intelligence",
-    "spirit",
-  ] as const) {
+  for (const stat of ['strength', 'dexterity', 'intelligence', 'spirit'] as const) {
     const value = item[stat] || 0;
     if (!value) continue;
     const requirement = context.requirements?.[stat];
@@ -229,17 +197,17 @@ export function valueItemStats(
       stat,
       value,
       score,
-      category: "utility",
+      category: 'utility',
       reason: requirement
         ? gap === 0
-          ? "Requirement is already met; this value is mostly surplus."
+          ? 'Requirement is already met; this value is mostly surplus.'
           : solves >= gap
-            ? "Reaches the required breakpoint."
+            ? 'Reaches the required breakpoint.'
             : `Still ${gap - solves} short of the required breakpoint.`
-        : "Provides general requirement flexibility.",
+        : 'Provides general requirement flexibility.',
       conditional: Boolean(requirement),
       wasted: Boolean(requirement && gap === 0),
-      source: "parsed",
+      source: 'parsed',
       local: false,
       effectiveBeforeCap: value,
       effectiveAfterCap: value,
@@ -250,24 +218,20 @@ export function valueItemStats(
   const crit = criticalValue(item);
   if (crit)
     add({
-      stat: "Critical scaling",
+      stat: 'Critical scaling',
       value: crit,
       score: context.critical ? diminishing(crit, CRITICAL_DAMAGE_TARGET) : 0,
-      category: "offence",
-      reason: context.critical
-        ? "Scales the selected critical build."
-        : "The selected build is non-critical.",
+      category: 'offence',
+      reason: context.critical ? 'Scales the selected critical build.' : 'The selected build is non-critical.',
       conditional: true,
       wasted: !context.critical,
-      source: "parsed",
+      source: 'parsed',
       local: true,
       effectiveBeforeCap: crit,
       effectiveAfterCap: context.critical ? crit : 0,
     });
 
-  const physical =
-    avg(item.physicalDamageMin, item.physicalDamageMax) *
-    (item.attacksPerSecond || 1);
+  const physical = avg(item.physicalDamageMin, item.physicalDamageMax) * (item.attacksPerSecond || 1);
   const elemental =
     (avg(item.fireDamageMin, item.fireDamageMax) +
       avg(item.coldDamageMin, item.coldDamageMax) +
@@ -276,69 +240,53 @@ export function valueItemStats(
   if (physical) {
     const matches = context.damageTags.some((tag) => /physical/i.test(tag));
     add({
-      stat: "Physical DPS",
+      stat: 'Physical DPS',
       value: physical,
       score: diminishing(physical, physicalDpsTarget(level)),
-      category: "offence",
-      reason: matches
-        ? "Matches the build damage source."
-        : "Physical damage is not a primary selected tag.",
+      category: 'offence',
+      reason: matches ? 'Matches the build damage source.' : 'Physical damage is not a primary selected tag.',
       conditional: true,
       wasted: !matches,
-      source: "parsed",
+      source: 'parsed',
       local: true,
       effectiveBeforeCap: physical,
       effectiveAfterCap: physical,
     });
   }
   if (elemental) {
-    const matches = context.damageTags.some((tag) =>
-      /cold|fire|lightning|elemental/i.test(tag),
-    );
+    const matches = context.damageTags.some((tag) => /cold|fire|lightning|elemental/i.test(tag));
     add({
-      stat: "Elemental DPS",
+      stat: 'Elemental DPS',
       value: elemental,
       score: diminishing(elemental, elementalDpsTarget(level)),
-      category: "offence",
-      reason: matches
-        ? "Matches the build damage tags."
-        : "Elemental damage is not a selected damage source.",
+      category: 'offence',
+      reason: matches ? 'Matches the build damage tags.' : 'Elemental damage is not a selected damage source.',
       conditional: true,
       wasted: !matches,
-      source: "parsed",
+      source: 'parsed',
       local: true,
       effectiveBeforeCap: elemental,
       effectiveAfterCap: elemental,
     });
   }
 
-  const score = (category: StatContribution["category"]) =>
-    weightedAverage(
-      contributions.filter(
-        (entry) => entry.category === category && !entry.wasted,
-      ),
-    );
-  const offenceScore = score("offence"),
-    defenceScore = score("defence"),
-    utilityScore = score("utility");
-  const groups = [offenceScore, defenceScore, utilityScore].filter(
-    (value) => value > 0,
-  );
-  if (!contributions.length)
-    warnings.push("No supported numeric stats were available for valuation.");
+  const score = (category: StatContribution['category']) =>
+    weightedAverage(contributions.filter((entry) => entry.category === category && !entry.wasted));
+  const offenceScore = score('offence'),
+    defenceScore = score('defence'),
+    utilityScore = score('utility');
+  const groups = [offenceScore, defenceScore, utilityScore].filter((value) => value > 0);
+  if (!contributions.length) warnings.push('No supported numeric stats were available for valuation.');
   return {
     offenceScore,
     defenceScore,
     utilityScore,
-    overallScore: groups.length
-      ? Math.round(groups.reduce((a, b) => a + b, 0) / groups.length)
-      : 0,
+    overallScore: groups.length ? Math.round(groups.reduce((a, b) => a + b, 0) / groups.length) : 0,
     contributions,
     warnings,
   };
 }
-const avg = (min?: number, max?: number) =>
-  min === undefined || max === undefined ? 0 : (min + max) / 2;
+const avg = (min?: number, max?: number) => (min === undefined || max === undefined ? 0 : (min + max) / 2);
 const weightedAverage = (rows: StatContribution[]) => {
   if (!rows.length) return 0;
   const weighted = rows.map((row) => ({
@@ -346,8 +294,5 @@ const weightedAverage = (rows: StatContribution[]) => {
     weight: Math.max(0.1, row.buildWeight * row.slotWeight),
   }));
   const totalWeight = weighted.reduce((sum, row) => sum + row.weight, 0);
-  return Math.round(
-    weighted.reduce((sum, row) => sum + row.score * row.weight, 0) /
-      totalWeight,
-  );
+  return Math.round(weighted.reduce((sum, row) => sum + row.score * row.weight, 0) / totalWeight);
 };

@@ -1,20 +1,127 @@
 import { BookOpen, ExternalLink, ShieldAlert } from 'lucide-react';
 
 export function DocsPage() {
-  return <div className="page standard-page docs-page">
-    <header className="page-header"><span className="eyebrow">FIELD MANUAL</span><h1>How Exile Companion works</h1><p>A short guide to reading estimates without mistaking them for certainty.</p></header>
-    <div className="docs-layout">
-      <nav className="card docs-nav"><strong>CONTENTS</strong><a href="#workflow">Workflow</a><a href="#quality">Item quality</a><a href="#racers">Racer approaches</a><a href="#sources">Data sources</a><a href="#pricing">Pricing logic</a><a href="#manual">Manual listings</a><a href="#limits">Trade2 limitations</a></nav>
-      <article className="card prose">
-        <section id="workflow"><h2>From item to estimate</h2><p>Copy an item in Path of Exile 2, paste it into the analyzer, choose your league, and run the check. Exile Companion extracts the base, defences, levels, attributes, resistances and important mods, then builds an official Trade2 comparison query.</p></section>
-        <section id="quality"><h2>Quality and build fit</h2><p>Item quality works even without market listings. The universal score grades movement-speed tiers, life, Energy Shield, armour, evasion, resistance coverage, attributes, Spirit, rarity find and coherent offensive packages.</p><p><b>My Build</b> can analyze a Mobalytics PoE 2 guide URL and translate its Equipment Priority section into a reviewable profile draft. Mobalytics may require the labeled read-only Jina AI Reader fallback when Cloudflare blocks direct access; imports are never saved until you review and confirm them.</p><p>The active profile adds a separate personalized fit score. It only uses priorities relevant to the item slot, scales automatic targets to your campaign/map stage, and supports slot-scoped phrases such as <code>[weapon] +# to level of all projectile skills</code>. The universal grade stays visible because a valuable item can still be wrong for your character.</p><p>A quality score is not a price. It tells you whether the item is structurally good, who might want it, and which missing modifier keeps it from the next tier.</p></section>
-        <section id="racers"><h2>Racer-inspired approaches</h2><p>Research into Ben/Darkee, tie23he, Havoc, AlkaizerX and imexile showed two repeatable item decisions: campaign racers prize movement and immediately usable damage, while HCSSF/Gauntlet completion depends on explicit defensive floors. <b>Campaign Race</b> and <b>Hardcore/Gauntlet</b> apply those different weights; Balanced remains neutral.</p><p>These are evidence-based product inferences, not copied builds or player endorsements. The full source audit is in <code>docs/racer-research.md</code>.</p></section>
-        <section id="sources"><h2>Know the source</h2><p><b>Live</b> means listings came from official Trade2 during this check. <b>Cached</b> means previously retrieved official results, no more than 24 hours old. <b>Manual</b> means you supplied every listing.</p></section>
-        <section id="pricing"><h2>Pricing logic</h2><p>The first search targets the exact base. If that market is empty, Exile Companion broadens to the same equipment slot with matching core stats. Exact base and type matches still rank highest. Boots heavily weight movement speed; weapons compare offensive stats instead of missing armour affixes.</p><p>The analyzer removes extreme statistical outliers and suspicious low-price seller clusters. Remaining prices are weighted by similarity; the lower quartile suggests a quick sale, the weighted median a fair listing, and the upper quartile a patient high listing.</p></section>
-        <section id="manual"><h2>Paste listings manually</h2><p>Use JSON arrays with <code>price</code>, <code>currency</code>, <code>baseType</code>, and <code>stats</code>, or one line per listing:</p><pre>25 exalted | Stone Greaves | +70 Life, 25% Movement Speed</pre></section>
-        <section id="limits"><h2>Official access can fail</h2><div className="docs-warning"><ShieldAlert/><p>Trade2 may rate-limit requests, require a browser session, or place Cloudflare in the way. The app still explains quality and build fit, but never manufactures a market price.</p></div><a className="external-doc" href="https://www.pathofexile.com/trade2/search/poe2/Runes%20of%20Aldur" target="_blank" rel="noreferrer">Open official Path of Exile 2 Trade <ExternalLink/></a></section>
-      </article>
+  return (
+    <div className="page standard-page docs-page">
+      <header className="page-header">
+        <span className="eyebrow">FIELD MANUAL</span>
+        <h1>How Exile Companion works</h1>
+        <p>A short guide to reading estimates without mistaking them for certainty.</p>
+      </header>
+      <div className="docs-layout">
+        <nav className="card docs-nav">
+          <strong>CONTENTS</strong>
+          <a href="#workflow">Workflow</a>
+          <a href="#quality">Item quality</a>
+          <a href="#racers">Racer approaches</a>
+          <a href="#sources">Data sources</a>
+          <a href="#pricing">Pricing logic</a>
+          <a href="#manual">Manual listings</a>
+          <a href="#limits">Trade2 limitations</a>
+        </nav>
+        <article className="card prose">
+          <section id="workflow">
+            <h2>From item to estimate</h2>
+            <p>
+              Copy an item in Path of Exile 2, paste it into the analyzer, choose your league, and run the check. Exile
+              Companion extracts the base, defences, levels, attributes, resistances and important mods, then builds an
+              official Trade2 comparison query.
+            </p>
+          </section>
+          <section id="quality">
+            <h2>Quality and build fit</h2>
+            <p>
+              Item quality works even without market listings. The universal score grades movement-speed tiers, life,
+              Energy Shield, armour, evasion, resistance coverage, attributes, Spirit, rarity find and coherent
+              offensive packages.
+            </p>
+            <p>
+              <b>My Build</b> can analyze a Mobalytics PoE 2 guide URL and translate its Equipment Priority section into
+              a reviewable profile draft. Mobalytics may require the labeled read-only Jina AI Reader fallback when
+              Cloudflare blocks direct access; imports are never saved until you review and confirm them.
+            </p>
+            <p>
+              The active profile adds a separate personalized fit score. It only uses priorities relevant to the item
+              slot, scales automatic targets to your campaign/map stage, and supports slot-scoped phrases such as{' '}
+              <code>[weapon] +# to level of all projectile skills</code>. The universal grade stays visible because a
+              valuable item can still be wrong for your character.
+            </p>
+            <p>
+              A quality score is not a price. It tells you whether the item is structurally good, who might want it, and
+              which missing modifier keeps it from the next tier.
+            </p>
+          </section>
+          <section id="racers">
+            <h2>Racer-inspired approaches</h2>
+            <p>
+              Research into Ben/Darkee, tie23he, Havoc, AlkaizerX and imexile showed two repeatable item decisions:
+              campaign racers prize movement and immediately usable damage, while HCSSF/Gauntlet completion depends on
+              explicit defensive floors. <b>Campaign Race</b> and <b>Hardcore/Gauntlet</b> apply those different
+              weights; Balanced remains neutral.
+            </p>
+            <p>
+              These are evidence-based product inferences, not copied builds or player endorsements. The full source
+              audit is in <code>docs/racer-research.md</code>.
+            </p>
+          </section>
+          <section id="sources">
+            <h2>Know the source</h2>
+            <p>
+              <b>Live</b> means listings came from official Trade2 during this check. <b>Cached</b> means previously
+              retrieved official results, no more than 24 hours old. <b>Manual</b> means you supplied every listing.
+            </p>
+          </section>
+          <section id="pricing">
+            <h2>Pricing logic</h2>
+            <p>
+              The first search targets the exact base. If that market is empty, Exile Companion broadens to the same
+              equipment slot with matching core stats. Exact base and type matches still rank highest. Boots heavily
+              weight movement speed; weapons compare offensive stats instead of missing armour affixes.
+            </p>
+            <p>
+              The analyzer removes extreme statistical outliers and suspicious low-price seller clusters. Remaining
+              prices are weighted by similarity; the lower quartile suggests a quick sale, the weighted median a fair
+              listing, and the upper quartile a patient high listing.
+            </p>
+          </section>
+          <section id="manual">
+            <h2>Paste listings manually</h2>
+            <p>
+              Use JSON arrays with <code>price</code>, <code>currency</code>, <code>baseType</code>, and{' '}
+              <code>stats</code>, or one line per listing:
+            </p>
+            <pre>25 exalted | Stone Greaves | +70 Life, 25% Movement Speed</pre>
+          </section>
+          <section id="limits">
+            <h2>Official access can fail</h2>
+            <div className="docs-warning">
+              <ShieldAlert />
+              <p>
+                Trade2 may rate-limit requests, require a browser session, or place Cloudflare in the way. The app still
+                explains quality and build fit, but never manufactures a market price.
+              </p>
+            </div>
+            <a
+              className="external-doc"
+              href="https://www.pathofexile.com/trade2/search/poe2/Runes%20of%20Aldur"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open official Path of Exile 2 Trade <ExternalLink />
+            </a>
+          </section>
+        </article>
+      </div>
+      <div className="repo-docs">
+        <BookOpen />
+        <div>
+          <h3>Developer documentation</h3>
+          <p>
+            The repository’s <code>/docs</code> folder covers API routes, architecture, scoring rules, Trade2 behavior,
+            and Docker operations.
+          </p>
+        </div>
+      </div>
     </div>
-    <div className="repo-docs"><BookOpen/><div><h3>Developer documentation</h3><p>The repository’s <code>/docs</code> folder covers API routes, architecture, scoring rules, Trade2 behavior, and Docker operations.</p></div></div>
-  </div>;
+  );
 }

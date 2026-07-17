@@ -1,5 +1,37 @@
-import {describe,expect,it} from 'vitest';
-import {builtInCatalogs,compareProfiles,diagnosePublicProfile,resolveCatalog} from './characterProfile.js';
-import type {PoeNinjaCharacterProfile} from './poeNinjaProfile.js';
-const profile=(life:number):PoeNinjaCharacterProfile=>({source:'poe.ninja-public-profile',sourceUrl:'https://poe.ninja/poe2/profile/a/l/character/c',importedAt:'2026-01-01T00:00:00Z',updatedAt:null,identity:{account:'a',name:'c',league:'l',level:1,className:'Druid',ascendancy:'Spirit Walker'},stats:{life,fireResistance:20,coldResistance:75,lightningResistance:75,chaosResistance:0},passives:{allocated:1,anoints:0,ascendancyPoints:0,bonusPassives:0,treeVersion:'Tree-1',nodeIds:[1]},keystones:[],questRewards:{claimed:[],missingCount:null,coverageNote:'not evaluated'},skills:[],equipment:[],equipmentCount:1,provenance:{publicProfile:true,confidence:'High',limitations:[]}});
-describe('versioned character profiles',()=>{it('refuses a non-exact catalog match',()=>expect(resolveCatalog([],'quests','Tree-1').status).toBe('unsupported'));it('resolves the pinned official 0.5 tree only for its exact version',()=>{expect(resolveCatalog(builtInCatalogs,'passive-tree','PassiveTree-0.5').status).toBe('supported');expect(resolveCatalog(builtInCatalogs,'passive-tree','PassiveTree-0.6').status).toBe('unsupported')});it('creates evidence-backed diagnostics',()=>expect(diagnosePublicProfile(profile(100)).some(x=>x.category==='resistance'&&x.severity==='critical')).toBe(true));it('compares immutable snapshots',()=>expect(compareProfiles(profile(100),profile(125)).stats).toContainEqual({key:'life',before:100,after:125,delta:25}));});
+import { describe, expect, it } from 'vitest';
+import { builtInCatalogs, compareProfiles, diagnosePublicProfile, resolveCatalog } from './characterProfile.js';
+import type { PoeNinjaCharacterProfile } from './poeNinjaProfile.js';
+const profile = (life: number): PoeNinjaCharacterProfile => ({
+  source: 'poe.ninja-public-profile',
+  sourceUrl: 'https://poe.ninja/poe2/profile/a/l/character/c',
+  importedAt: '2026-01-01T00:00:00Z',
+  updatedAt: null,
+  identity: { account: 'a', name: 'c', league: 'l', level: 1, className: 'Druid', ascendancy: 'Spirit Walker' },
+  stats: { life, fireResistance: 20, coldResistance: 75, lightningResistance: 75, chaosResistance: 0 },
+  passives: { allocated: 1, anoints: 0, ascendancyPoints: 0, bonusPassives: 0, treeVersion: 'Tree-1', nodeIds: [1] },
+  keystones: [],
+  questRewards: { claimed: [], missingCount: null, coverageNote: 'not evaluated' },
+  skills: [],
+  equipment: [],
+  equipmentCount: 1,
+  provenance: { publicProfile: true, confidence: 'High', limitations: [] },
+});
+describe('versioned character profiles', () => {
+  it('refuses a non-exact catalog match', () =>
+    expect(resolveCatalog([], 'quests', 'Tree-1').status).toBe('unsupported'));
+  it('resolves the pinned official 0.5 tree only for its exact version', () => {
+    expect(resolveCatalog(builtInCatalogs, 'passive-tree', 'PassiveTree-0.5').status).toBe('supported');
+    expect(resolveCatalog(builtInCatalogs, 'passive-tree', 'PassiveTree-0.6').status).toBe('unsupported');
+  });
+  it('creates evidence-backed diagnostics', () =>
+    expect(
+      diagnosePublicProfile(profile(100)).some((x) => x.category === 'resistance' && x.severity === 'critical'),
+    ).toBe(true));
+  it('compares immutable snapshots', () =>
+    expect(compareProfiles(profile(100), profile(125)).stats).toContainEqual({
+      key: 'life',
+      before: 100,
+      after: 125,
+      delta: 25,
+    }));
+});

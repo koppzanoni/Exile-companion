@@ -1,12 +1,12 @@
-import express from "express";
-import type { AppDatabase } from "../db.js";
-import { normalizeStoredResult } from "../appHelpers.js";
+import express from 'express';
+import type { AppDatabase } from '../db.js';
+import { normalizeStoredResult } from '../appHelpers.js';
 
 export function installChecksRoutes(app: express.Express, db: AppDatabase) {
-  app.get("/api/checks", (_req, res) => {
+  app.get('/api/checks', (_req, res) => {
     const rows = db
       .prepare(
-        "SELECT id, league, item_json, result_json, data_source, official_url, warning, created_at FROM checks ORDER BY id DESC",
+        'SELECT id, league, item_json, result_json, data_source, official_url, warning, created_at FROM checks ORDER BY id DESC',
       )
       .all() as any[];
     res.json(
@@ -37,14 +37,12 @@ export function installChecksRoutes(app: express.Express, db: AppDatabase) {
     );
   });
 
-  app.get("/api/checks/:id", (req, res) => {
-    const row = db
-      .prepare("SELECT * FROM checks WHERE id = ?")
-      .get(req.params.id) as any;
-    if (!row) return res.status(404).json({ error: "Saved check not found." });
+  app.get('/api/checks/:id', (req, res) => {
+    const row = db.prepare('SELECT * FROM checks WHERE id = ?').get(req.params.id) as any;
+    if (!row) return res.status(404).json({ error: 'Saved check not found.' });
     const comps = db
       .prepare(
-        "SELECT listing_json, similarity, excluded_reason FROM comparable_listings WHERE check_id = ? ORDER BY similarity DESC",
+        'SELECT listing_json, similarity, excluded_reason FROM comparable_listings WHERE check_id = ? ORDER BY similarity DESC',
       )
       .all(req.params.id) as any[];
     const stored = normalizeStoredResult(JSON.parse(row.result_json));
@@ -76,12 +74,9 @@ export function installChecksRoutes(app: express.Express, db: AppDatabase) {
     });
   });
 
-  app.delete("/api/checks/:id", (req, res) => {
-    const result = db
-      .prepare("DELETE FROM checks WHERE id = ?")
-      .run(req.params.id);
-    if (!result.changes)
-      return res.status(404).json({ error: "Saved check not found." });
+  app.delete('/api/checks/:id', (req, res) => {
+    const result = db.prepare('DELETE FROM checks WHERE id = ?').run(req.params.id);
+    if (!result.changes) return res.status(404).json({ error: 'Saved check not found.' });
     return res.status(204).send();
   });
 }

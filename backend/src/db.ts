@@ -202,10 +202,19 @@ export function createDatabase(filename = process.env.DATABASE_PATH || path.reso
   ensureColumn(db, 'price_estimates', 'data_source', 'data_source TEXT');
   ensureColumn(db, 'purchase_transactions', 'reversed_at', 'reversed_at TEXT');
   ensureColumn(db, 'purchase_transactions', 'reversal_reason', 'reversal_reason TEXT');
-  ensureColumn(db, 'sale_journal', 'purchase_id', 'purchase_id INTEGER REFERENCES purchase_transactions(id) ON DELETE SET NULL');
-  db.exec('CREATE INDEX IF NOT EXISTS idx_price_estimates_history ON price_estimates(base_type, league, created_at DESC);');
+  ensureColumn(
+    db,
+    'sale_journal',
+    'purchase_id',
+    'purchase_id INTEGER REFERENCES purchase_transactions(id) ON DELETE SET NULL',
+  );
+  db.exec(
+    'CREATE INDEX IF NOT EXISTS idx_price_estimates_history ON price_estimates(base_type, league, created_at DESC);',
+  );
   runMigrations(db);
-  db.prepare(`INSERT OR IGNORE INTO settings(key, value) VALUES ('divineToExalted', '65'), ('defaultLeague', 'Runes of Aldur'), ('craftingRiskTolerance', 'Medium'), ('showCurrencyWarnings', 'true'), ('conservativeCraftingRecommendations', 'true'), ('interfaceMode', 'Beginner')`).run();
+  db.prepare(
+    `INSERT OR IGNORE INTO settings(key, value) VALUES ('divineToExalted', '65'), ('defaultLeague', 'Runes of Aldur'), ('craftingRiskTolerance', 'Medium'), ('showCurrencyWarnings', 'true'), ('conservativeCraftingRecommendations', 'true'), ('interfaceMode', 'Beginner')`,
+  ).run();
   if (!db.prepare('SELECT 1 FROM currency_rates LIMIT 1').get()) {
     db.prepare('INSERT INTO currency_rates(divine_to_exalted, source) VALUES (?, ?)').run(65, 'default');
   }
@@ -218,9 +227,31 @@ export function createDatabase(filename = process.env.DATABASE_PATH || path.reso
 }
 
 function seedRosterCatalog(db: DatabaseSync) {
-  const validated=validateRosterCatalog(builtInRosterCatalog); if(!validated.ok)throw new Error(validated.errors.join(' '));
-  db.prepare('INSERT OR IGNORE INTO roster_catalogs(patch,data_version,source,verified_at,confidence,checksum,payload_json) VALUES (?,?,?,?,?,?,?)').run(validated.catalog.patch,validated.catalog.dataVersion,validated.catalog.source,validated.catalog.verifiedAt,validated.catalog.confidence,validated.checksum,JSON.stringify(validated.catalog));
-  if(!db.prepare("SELECT 1 FROM catalog_versions WHERE dataset='roster' AND status='active'").get())db.prepare("INSERT OR IGNORE INTO catalog_versions(dataset,patch,data_version,source,status,entry_count,regression_json,compare_json,activated_at) VALUES ('roster',?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").run(validated.catalog.patch,validated.catalog.dataVersion,validated.catalog.source,'active',validated.catalog.entries.length,JSON.stringify({passed:true,issues:[]}),JSON.stringify({checksum:validated.checksum}));
+  const validated = validateRosterCatalog(builtInRosterCatalog);
+  if (!validated.ok) throw new Error(validated.errors.join(' '));
+  db.prepare(
+    'INSERT OR IGNORE INTO roster_catalogs(patch,data_version,source,verified_at,confidence,checksum,payload_json) VALUES (?,?,?,?,?,?,?)',
+  ).run(
+    validated.catalog.patch,
+    validated.catalog.dataVersion,
+    validated.catalog.source,
+    validated.catalog.verifiedAt,
+    validated.catalog.confidence,
+    validated.checksum,
+    JSON.stringify(validated.catalog),
+  );
+  if (!db.prepare("SELECT 1 FROM catalog_versions WHERE dataset='roster' AND status='active'").get())
+    db.prepare(
+      "INSERT OR IGNORE INTO catalog_versions(dataset,patch,data_version,source,status,entry_count,regression_json,compare_json,activated_at) VALUES ('roster',?,?,?,?,?,?,?,CURRENT_TIMESTAMP)",
+    ).run(
+      validated.catalog.patch,
+      validated.catalog.dataVersion,
+      validated.catalog.source,
+      'active',
+      validated.catalog.entries.length,
+      JSON.stringify({ passed: true, issues: [] }),
+      JSON.stringify({ checksum: validated.checksum }),
+    );
 }
 
 function ensureColumn(db: DatabaseSync, table: string, column: string, definition: string) {
@@ -229,34 +260,97 @@ function ensureColumn(db: DatabaseSync, table: string, column: string, definitio
 }
 
 function seedCraftingCurrencies(db: DatabaseSync) {
-  const insert = db.prepare('INSERT OR IGNORE INTO crafting_currencies(id, patch, data_version, source, confidence, currency_json) VALUES (?, ?, ?, ?, ?, ?)');
-  for (const currency of craftingCurrencies) insert.run(currency.id, MODIFIER_SEED_PATCH, MODIFIER_SEED_VERSION, MODIFIER_SEED_SOURCE, 'Medium', JSON.stringify(currency));
+  const insert = db.prepare(
+    'INSERT OR IGNORE INTO crafting_currencies(id, patch, data_version, source, confidence, currency_json) VALUES (?, ?, ?, ?, ?, ?)',
+  );
+  for (const currency of craftingCurrencies)
+    insert.run(
+      currency.id,
+      MODIFIER_SEED_PATCH,
+      MODIFIER_SEED_VERSION,
+      MODIFIER_SEED_SOURCE,
+      'Medium',
+      JSON.stringify(currency),
+    );
 }
 
 function seedInitialCatalogVersion(db: DatabaseSync) {
   if (db.prepare("SELECT 1 FROM catalog_versions WHERE dataset = 'modifiers' AND status = 'active'").get()) return;
-  db.prepare('INSERT OR IGNORE INTO catalog_versions(dataset, patch, data_version, source, status, entry_count, regression_json, compare_json, activated_at) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)')
-    .run('modifiers', MODIFIER_SEED_PATCH, MODIFIER_SEED_VERSION, MODIFIER_SEED_SOURCE, 'active', defaultModifierCatalog.length, JSON.stringify({ passed: true, matchedFixtures: 0, totalFixtures: 0, issues: [] }), JSON.stringify({ addedIds: [], removedIds: [], unchangedCount: 0 }));
+  db.prepare(
+    'INSERT OR IGNORE INTO catalog_versions(dataset, patch, data_version, source, status, entry_count, regression_json, compare_json, activated_at) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)',
+  ).run(
+    'modifiers',
+    MODIFIER_SEED_PATCH,
+    MODIFIER_SEED_VERSION,
+    MODIFIER_SEED_SOURCE,
+    'active',
+    defaultModifierCatalog.length,
+    JSON.stringify({ passed: true, matchedFixtures: 0, totalFixtures: 0, issues: [] }),
+    JSON.stringify({ addedIds: [], removedIds: [], unchangedCount: 0 }),
+  );
 }
 
 function seedSkillProfiles(db: DatabaseSync) {
-  const insert = db.prepare('INSERT OR IGNORE INTO skill_profiles(id, patch, data_version, source, confidence, profile_json) VALUES (?, ?, ?, ?, ?, ?)');
-  for (const profile of builtInSkillMechanicProfiles) insert.run(profile.id, profile.patch, profile.dataVersion, profile.source, profile.confidence, JSON.stringify(profile));
+  const insert = db.prepare(
+    'INSERT OR IGNORE INTO skill_profiles(id, patch, data_version, source, confidence, profile_json) VALUES (?, ?, ?, ?, ?, ?)',
+  );
+  for (const profile of builtInSkillMechanicProfiles)
+    insert.run(
+      profile.id,
+      profile.patch,
+      profile.dataVersion,
+      profile.source,
+      profile.confidence,
+      JSON.stringify(profile),
+    );
   const active = db.prepare("SELECT 1 FROM catalog_versions WHERE dataset = 'skills' AND status = 'active'").get();
-  if (!active) db.prepare('INSERT OR IGNORE INTO catalog_versions(dataset, patch, data_version, source, status, entry_count, regression_json, compare_json, activated_at) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)')
-    .run('skills', '0.5.x', '2026-07-14.1', 'poe2wiki', 'active', builtInSkillMechanicProfiles.length, JSON.stringify({ passed: true, issues: [] }), JSON.stringify({ addedIds: builtInSkillMechanicProfiles.map((profile) => profile.id), removedIds: [] }));
+  if (!active)
+    db.prepare(
+      'INSERT OR IGNORE INTO catalog_versions(dataset, patch, data_version, source, status, entry_count, regression_json, compare_json, activated_at) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)',
+    ).run(
+      'skills',
+      '0.5.x',
+      '2026-07-14.1',
+      'poe2wiki',
+      'active',
+      builtInSkillMechanicProfiles.length,
+      JSON.stringify({ passed: true, issues: [] }),
+      JSON.stringify({ addedIds: builtInSkillMechanicProfiles.map((profile) => profile.id), removedIds: [] }),
+    );
 }
 
 function seedModifierCatalog(db: DatabaseSync) {
-  db.prepare(`INSERT OR IGNORE INTO data_sources(name, authority, url, updated_at) VALUES ('modifier-catalog-derived', 'inferred', NULL, CURRENT_TIMESTAMP)`).run();
-  const insertModifier = db.prepare('INSERT OR IGNORE INTO modifier_definitions(id, patch, data_version, source, confidence, modifier_json) VALUES (?, ?, ?, ?, ?, ?)');
-  const insertGroup = db.prepare('INSERT OR IGNORE INTO modifier_groups(id, patch, data_version, source, confidence, group_json) VALUES (?, ?, ?, ?, ?, ?)');
+  db.prepare(
+    `INSERT OR IGNORE INTO data_sources(name, authority, url, updated_at) VALUES ('modifier-catalog-derived', 'inferred', NULL, CURRENT_TIMESTAMP)`,
+  ).run();
+  const insertModifier = db.prepare(
+    'INSERT OR IGNORE INTO modifier_definitions(id, patch, data_version, source, confidence, modifier_json) VALUES (?, ?, ?, ?, ?, ?)',
+  );
+  const insertGroup = db.prepare(
+    'INSERT OR IGNORE INTO modifier_groups(id, patch, data_version, source, confidence, group_json) VALUES (?, ?, ?, ?, ?, ?)',
+  );
   const groups = new Map<string, { type: string; local: boolean; hybrid: boolean }>();
   for (const entry of defaultModifierCatalog) {
-    insertModifier.run(entry.id, MODIFIER_SEED_PATCH, MODIFIER_SEED_VERSION, MODIFIER_SEED_SOURCE, 'Medium', JSON.stringify(entry));
-    if (!groups.has(entry.group)) groups.set(entry.group, { type: entry.type, local: entry.local, hybrid: entry.hybrid });
+    insertModifier.run(
+      entry.id,
+      MODIFIER_SEED_PATCH,
+      MODIFIER_SEED_VERSION,
+      MODIFIER_SEED_SOURCE,
+      'Medium',
+      JSON.stringify(entry),
+    );
+    if (!groups.has(entry.group))
+      groups.set(entry.group, { type: entry.type, local: entry.local, hybrid: entry.hybrid });
   }
-  for (const [id, info] of groups) insertGroup.run(id, MODIFIER_SEED_PATCH, MODIFIER_SEED_VERSION, MODIFIER_SEED_SOURCE, 'Medium', JSON.stringify(info));
+  for (const [id, info] of groups)
+    insertGroup.run(
+      id,
+      MODIFIER_SEED_PATCH,
+      MODIFIER_SEED_VERSION,
+      MODIFIER_SEED_SOURCE,
+      'Medium',
+      JSON.stringify(info),
+    );
 }
 
 export type AppDatabase = ReturnType<typeof createDatabase>;
@@ -267,7 +361,9 @@ export function getSettings(db: AppDatabase) {
   return {
     divineToExalted: Number(values.divineToExalted || 65),
     defaultLeague: values.defaultLeague || 'Runes of Aldur',
-    craftingRiskTolerance: ['Low','Medium','High'].includes(values.craftingRiskTolerance) ? values.craftingRiskTolerance as 'Low'|'Medium'|'High' : 'Medium',
+    craftingRiskTolerance: ['Low', 'Medium', 'High'].includes(values.craftingRiskTolerance)
+      ? (values.craftingRiskTolerance as 'Low' | 'Medium' | 'High')
+      : 'Medium',
     showCurrencyWarnings: values.showCurrencyWarnings !== 'false',
     conservativeCraftingRecommendations: values.conservativeCraftingRecommendations !== 'false',
     interfaceMode: values.interfaceMode === 'Advanced' ? 'Advanced' : 'Beginner',

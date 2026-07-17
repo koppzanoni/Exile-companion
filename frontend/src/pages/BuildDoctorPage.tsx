@@ -17,15 +17,12 @@ import {
   Target,
   TestTube2,
   UserRound,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { api } from "../api";
-import { GeminiCoach } from "../components/GeminiCoach";
-import { UpgradeCandidatePlanner } from "../components/UpgradeCandidatePlanner";
-import {
-  parseEquipmentBundle,
-  type EquipmentImportPreview,
-} from "../equipmentImport";
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { api } from '../api';
+import { GeminiCoach } from '../components/GeminiCoach';
+import { UpgradeCandidatePlanner } from '../components/UpgradeCandidatePlanner';
+import { parseEquipmentBundle, type EquipmentImportPreview } from '../equipmentImport';
 import type {
   BuildDoctorResult,
   BuildFitProfile,
@@ -35,32 +32,28 @@ import type {
   EquipmentSlotInput,
   PoeOAuthStatus,
   ReconciliationResult,
-} from "../types";
-import { useI18n } from "../i18n";
+} from '../types';
+import { useI18n } from '../i18n';
 
 const slotNames = [
-  "Weapon",
-  "Offhand",
-  "Helmet",
-  "Body Armour",
-  "Gloves",
-  "Boots",
-  "Belt",
-  "Amulet",
-  "Ring 1",
-  "Ring 2",
+  'Weapon',
+  'Offhand',
+  'Helmet',
+  'Body Armour',
+  'Gloves',
+  'Boots',
+  'Belt',
+  'Amulet',
+  'Ring 1',
+  'Ring 2',
 ];
 const blankEquipment: EquipmentSlotInput[] = slotNames.map((slot) => ({
   slot,
-  itemText: "",
+  itemText: '',
 }));
-function snapshotDiagnosis(
-  row: Record<string, unknown>,
-): BuildDoctorResult | null {
+function snapshotDiagnosis(row: Record<string, unknown>): BuildDoctorResult | null {
   try {
-    return typeof row.diagnosisJson === "string"
-      ? (JSON.parse(row.diagnosisJson) as BuildDoctorResult)
-      : null;
+    return typeof row.diagnosisJson === 'string' ? (JSON.parse(row.diagnosisJson) as BuildDoctorResult) : null;
   } catch {
     return null;
   }
@@ -68,8 +61,7 @@ function snapshotDiagnosis(
 
 export function BuildDoctorPage() {
   const { t, locale } = useI18n();
-  const text = (english: string, portuguese: string) =>
-    locale === "pt-BR" ? portuguese : english;
+  const text = (english: string, portuguese: string) => (locale === 'pt-BR' ? portuguese : english);
   const diagnosticText = (entry: {
     code?: string;
     params?: Record<string, string | number>;
@@ -77,62 +69,48 @@ export function BuildDoctorPage() {
     message?: string;
   }) => {
     const p = entry.params || {};
-    if (locale !== "pt-BR") return entry.original || entry.message || "";
+    if (locale !== 'pt-BR') return entry.original || entry.message || '';
     switch (entry.code) {
-      case "equipment.empty":
-        return "Nenhum equipamento foi informado; o diagnóstico representa um personagem vazio.";
-      case "spirit.target_unknown":
-        return "A demanda de Spirit é desconhecida porque a build não possui um alvo de Spirit configurado.";
-      case "budget.relative_only":
-        return "O orçamento sugerido é uma prioridade relativa, não um preço, pois não há um modelo verificado de custos de mercado ou crafting.";
-      case "swap.attribute_dependency":
+      case 'equipment.empty':
+        return 'Nenhum equipamento foi informado; o diagnóstico representa um personagem vazio.';
+      case 'spirit.target_unknown':
+        return 'A demanda de Spirit é desconhecida porque a build não possui um alvo de Spirit configurado.';
+      case 'budget.relative_only':
+        return 'O orçamento sugerido é uma prioridade relativa, não um preço, pois não há um modelo verificado de custos de mercado ou crafting.';
+      case 'swap.attribute_dependency':
         return `Não substitua ${p.slot} antes de recuperar ${p.gap} de ${p.attribute}; outro item exige ${p.required} e restariam apenas ${p.remaining}.`;
-      case "swap.resistance_dependency":
+      case 'swap.resistance_dependency':
         return `Não substitua ${p.slot} antes de recuperar ${p.missing}% de ${p.resistance}; restariam ${p.remaining}%, abaixo do limite de ${p.cap}%.`;
       default:
-        return entry.original || entry.message || "";
+        return entry.original || entry.message || '';
     }
   };
-  const [equipment, setEquipment] =
-    useState<EquipmentSlotInput[]>(blankEquipment);
+  const [equipment, setEquipment] = useState<EquipmentSlotInput[]>(blankEquipment);
   const [buildProfiles, setBuildProfiles] = useState<BuildFitProfile[]>([]);
   const [characters, setCharacters] = useState<CharacterSummary[]>([]);
-  const [selectedCharacterId, setSelectedCharacterId] = useState("");
-  const [loadedCharacter, setLoadedCharacter] =
-    useState<CharacterSummary | null>(null);
+  const [selectedCharacterId, setSelectedCharacterId] = useState('');
+  const [loadedCharacter, setLoadedCharacter] = useState<CharacterSummary | null>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [poe, setPoe] = useState<PoeOAuthStatus | null>(null);
-  const [reconciliation, setReconciliation] =
-    useState<ReconciliationResult | null>(null);
-  const [bulkText, setBulkText] = useState("");
-  const [bulkPreview, setBulkPreview] = useState<EquipmentImportPreview | null>(
-    null,
-  );
-  const [roadmaps, setRoadmaps] = useState<
-    Array<{ label: string; plan: CharacterActionPlan }>
-  >([]);
-  const [syncApplied, setSyncApplied] = useState<
-    ReconciliationResult["differences"]
-  >([]);
-  const [snapshots, setSnapshots] = useState<Array<Record<string, unknown>>>(
-    [],
-  );
+  const [reconciliation, setReconciliation] = useState<ReconciliationResult | null>(null);
+  const [bulkText, setBulkText] = useState('');
+  const [bulkPreview, setBulkPreview] = useState<EquipmentImportPreview | null>(null);
+  const [roadmaps, setRoadmaps] = useState<Array<{ label: string; plan: CharacterActionPlan }>>([]);
+  const [syncApplied, setSyncApplied] = useState<ReconciliationResult['differences']>([]);
+  const [snapshots, setSnapshots] = useState<Array<Record<string, unknown>>>([]);
   const [roadmapToSave, setRoadmapToSave] = useState<{
     label: string;
     plan: CharacterActionPlan;
   } | null>(null);
-  const [savedRoadmap, setSavedRoadmap] = useState("");
-  const [selectedBuildProfileId, setSelectedBuildProfileId] =
-    useState("generic-build-fit");
+  const [savedRoadmap, setSavedRoadmap] = useState('');
+  const [selectedBuildProfileId, setSelectedBuildProfileId] = useState('generic-build-fit');
   const [result, setResult] = useState<BuildDoctorResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [activeSlot, setActiveSlot] = useState("");
-  const [candidateItemText, setCandidateItemText] = useState("");
+  const [error, setError] = useState('');
+  const [activeSlot, setActiveSlot] = useState('');
+  const [candidateItemText, setCandidateItemText] = useState('');
   const [tolerance, setTolerance] = useState(100);
-  const [simulation, setSimulation] = useState<BuildSwapSimulation | null>(
-    null,
-  );
+  const [simulation, setSimulation] = useState<BuildSwapSimulation | null>(null);
   const [toolLoading, setToolLoading] = useState(false);
 
   useEffect(() => {
@@ -151,19 +129,15 @@ export function BuildDoctorPage() {
   }, []);
 
   function setSlotText(slot: string, itemText: string) {
-    setEquipment((old) =>
-      old.map((entry) =>
-        entry.slot === slot ? { ...entry, itemText } : entry,
-      ),
-    );
+    setEquipment((old) => old.map((entry) => (entry.slot === slot ? { ...entry, itemText } : entry)));
   }
 
   async function loadRoadmaps(character: CharacterSummary) {
     const maximum = Math.max(0, character.budget || 0);
     const tiers = [
-      { label: "Economy", budget: Math.round(maximum * 0.25 * 100) / 100 },
-      { label: "Balanced", budget: Math.round(maximum * 0.6 * 100) / 100 },
-      { label: "Goal", budget: maximum },
+      { label: 'Economy', budget: Math.round(maximum * 0.25 * 100) / 100 },
+      { label: 'Balanced', budget: Math.round(maximum * 0.6 * 100) / 100 },
+      { label: 'Goal', budget: maximum },
     ];
     try {
       setRoadmaps(
@@ -188,16 +162,13 @@ export function BuildDoctorPage() {
   async function saveRoadmap() {
     if (!loadedCharacter || !roadmapToSave) return;
     setImportLoading(true);
-    setError("");
+    setError('');
     try {
-      await api.persistCharacterActionPlan(
-        loadedCharacter.id,
-        roadmapToSave.plan.purchases,
-      );
+      await api.persistCharacterActionPlan(loadedCharacter.id, roadmapToSave.plan.purchases);
       setSavedRoadmap(roadmapToSave.label);
       setRoadmapToSave(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save this roadmap.");
+      setError(e instanceof Error ? e.message : 'Could not save this roadmap.');
     } finally {
       setImportLoading(false);
     }
@@ -207,29 +178,23 @@ export function BuildDoctorPage() {
     setEquipment(blankEquipment);
     setResult(null);
     setLoadedCharacter(null);
-    setError("");
+    setError('');
   }
 
   function previewBulkImport() {
     if (!bulkText.trim()) return;
     setBulkPreview(parseEquipmentBundle(bulkText));
-    setError("");
+    setError('');
   }
   function applyBulkImport() {
     if (!bulkPreview) return;
     if (equipment.some((entry) => entry.itemText.trim())) {
-      setError(
-        "Clear the current equipment before applying this import so no existing item is overwritten.",
-      );
+      setError('Clear the current equipment before applying this import so no existing item is overwritten.');
       return;
     }
-    const bySlot = new Map(
-      bulkPreview.equipment.map((entry) => [entry.slot, entry.itemText]),
-    );
-    setEquipment(
-      slotNames.map((slot) => ({ slot, itemText: bySlot.get(slot) || "" })),
-    );
-    setBulkText("");
+    const bySlot = new Map(bulkPreview.equipment.map((entry) => [entry.slot, entry.itemText]));
+    setEquipment(slotNames.map((slot) => ({ slot, itemText: bySlot.get(slot) || '' })));
+    setBulkText('');
     setBulkPreview(null);
     setLoadedCharacter(null);
     setResult(null);
@@ -238,21 +203,11 @@ export function BuildDoctorPage() {
   async function previewOfficialSync() {
     if (!loadedCharacter || !poe?.connections[0]) return;
     setImportLoading(true);
-    setError("");
+    setError('');
     try {
-      setReconciliation(
-        await api.reconcileCharacter(
-          loadedCharacter.id,
-          poe.connections[0].id,
-          false,
-        ),
-      );
+      setReconciliation(await api.reconcileCharacter(loadedCharacter.id, poe.connections[0].id, false));
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Could not compare with the official account.",
-      );
+      setError(e instanceof Error ? e.message : 'Could not compare with the official account.');
     } finally {
       setImportLoading(false);
     }
@@ -260,24 +215,15 @@ export function BuildDoctorPage() {
   async function applyOfficialSync() {
     if (!loadedCharacter || !poe?.connections[0]) return;
     setImportLoading(true);
-    setError("");
+    setError('');
     try {
-      const applied = await api.reconcileCharacter(
-        loadedCharacter.id,
-        poe.connections[0].id,
-        true,
-      );
+      const applied = await api.reconcileCharacter(loadedCharacter.id, poe.connections[0].id, true);
       const detail = await api.character(loadedCharacter.id);
-      const bySlot = new Map(
-        detail.equipment.map((entry) => [
-          entry.slot.toLowerCase(),
-          entry.itemText,
-        ]),
-      );
+      const bySlot = new Map(detail.equipment.map((entry) => [entry.slot.toLowerCase(), entry.itemText]));
       setEquipment(
         slotNames.map((slot) => ({
           slot,
-          itemText: bySlot.get(slot.toLowerCase()) || "",
+          itemText: bySlot.get(slot.toLowerCase()) || '',
         })),
       );
       setResult(detail.diagnosis);
@@ -287,11 +233,7 @@ export function BuildDoctorPage() {
       void loadRoadmaps(detail.character);
       void loadSnapshots(detail.character.id);
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Could not apply official synchronization.",
-      );
+      setError(e instanceof Error ? e.message : 'Could not apply official synchronization.');
     } finally {
       setImportLoading(false);
     }
@@ -300,74 +242,55 @@ export function BuildDoctorPage() {
   async function loadCharacter() {
     if (!selectedCharacterId) return;
     if (equipment.some((entry) => entry.itemText.trim())) {
-      setError(
-        "Clear the current equipment before loading a character so nothing you pasted is overwritten.",
-      );
+      setError('Clear the current equipment before loading a character so nothing you pasted is overwritten.');
       return;
     }
     setImportLoading(true);
-    setError("");
+    setError('');
     setResult(null);
     try {
       const detail = await api.character(Number(selectedCharacterId));
-      const bySlot = new Map(
-        detail.equipment.map((entry) => [
-          entry.slot.toLowerCase(),
-          entry.itemText,
-        ]),
-      );
+      const bySlot = new Map(detail.equipment.map((entry) => [entry.slot.toLowerCase(), entry.itemText]));
       const imported = slotNames.map((slot) => ({
         slot,
-        itemText: bySlot.get(slot.toLowerCase()) || "",
+        itemText: bySlot.get(slot.toLowerCase()) || '',
       }));
       setEquipment(imported);
       setLoadedCharacter(detail.character);
       void loadRoadmaps(detail.character);
       void loadSnapshots(detail.character.id);
-      if (detail.character.buildProfileId)
-        setSelectedBuildProfileId(detail.character.buildProfileId);
+      if (detail.character.buildProfileId) setSelectedBuildProfileId(detail.character.buildProfileId);
       if (!detail.equipment.length) {
-        setError(
-          "This character has no saved equipment yet. Import it from Characters or paste items below.",
-        );
+        setError('This character has no saved equipment yet. Import it from Characters or paste items below.');
         return;
       }
       setResult(
         detail.diagnosis ||
           (await api.buildDoctor({
             equipment: detail.equipment,
-            selectedBuildProfileId:
-              detail.character.buildProfileId || selectedBuildProfileId,
+            selectedBuildProfileId: detail.character.buildProfileId || selectedBuildProfileId,
           })),
       );
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not load this character.",
-      );
+      setError(e instanceof Error ? e.message : 'Could not load this character.');
     } finally {
       setImportLoading(false);
     }
   }
 
   async function diagnose() {
-    setError("");
+    setError('');
     setLoading(true);
     setResult(null);
     try {
       const filled = equipment.filter((entry) => entry.itemText.trim());
       if (!filled.length) {
-        setError("Paste at least one equipped item.");
+        setError('Paste at least one equipped item.');
         return;
       }
-      setResult(
-        await api.buildDoctor({ equipment: filled, selectedBuildProfileId }),
-      );
+      setResult(await api.buildDoctor({ equipment: filled, selectedBuildProfileId }));
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Could not diagnose this equipment set",
-      );
+      setError(e instanceof Error ? e.message : 'Could not diagnose this equipment set');
     } finally {
       setLoading(false);
     }
@@ -377,28 +300,26 @@ export function BuildDoctorPage() {
     const current = equipment.find((entry) => entry.slot === activeSlot);
     if (!current?.itemText) return;
     setToolLoading(true);
-    setError("");
+    setError('');
     try {
       const preserveStats = [
-        "life",
-        "fireResistance",
-        "coldResistance",
-        "lightningResistance",
-        "chaosResistance",
-        "movementSpeed",
-        "spirit",
+        'life',
+        'fireResistance',
+        'coldResistance',
+        'lightningResistance',
+        'chaosResistance',
+        'movementSpeed',
+        'spirit',
       ];
       const response = await api.buildDoctorUpgradeSearch({
         itemText: current.itemText,
-        league: "Runes of Aldur",
+        league: 'Runes of Aldur',
         tolerance,
         preserveStats,
       });
-      window.open(response.url, "_blank", "noopener,noreferrer");
+      window.open(response.url, '_blank', 'noopener,noreferrer');
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not create the upgrade search.",
-      );
+      setError(e instanceof Error ? e.message : 'Could not create the upgrade search.');
     } finally {
       setToolLoading(false);
     }
@@ -406,7 +327,7 @@ export function BuildDoctorPage() {
   async function simulateSwap() {
     if (!activeSlot || !candidateItemText.trim()) return;
     setToolLoading(true);
-    setError("");
+    setError('');
     try {
       setSimulation(
         await api.simulateBuildSwap({
@@ -417,9 +338,7 @@ export function BuildDoctorPage() {
         }),
       );
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not simulate this swap.",
-      );
+      setError(e instanceof Error ? e.message : 'Could not simulate this swap.');
     } finally {
       setToolLoading(false);
     }
@@ -428,9 +347,9 @@ export function BuildDoctorPage() {
   return (
     <div className="page standard-page">
       <header className="page-header">
-        <span className="eyebrow">{t("doctor.eyebrow").toUpperCase()}</span>
-        <h1>{t("doctor.title")}</h1>
-        <p>{t("doctor.help")}</p>
+        <span className="eyebrow">{t('doctor.eyebrow').toUpperCase()}</span>
+        <h1>{t('doctor.title')}</h1>
+        <p>{t('doctor.help')}</p>
       </header>
       <div className="build-layout build-doctor-layout">
         <div className="build-main">
@@ -438,30 +357,30 @@ export function BuildDoctorPage() {
             <div className="build-section-title">
               <Stethoscope />
               <div>
-                <h2>{t("doctor.equipment")}</h2>
-                <p>{t("doctor.equipmentHelp")}</p>
+                <h2>{t('doctor.equipment')}</h2>
+                <p>{t('doctor.equipmentHelp')}</p>
               </div>
             </div>
             <div className="build-doctor-character-import">
               <div>
                 <UserRound />
                 <div>
-                  <strong>{t("doctor.saved")}</strong>
-                  <span>{t("doctor.savedHelp")}</span>
+                  <strong>{t('doctor.saved')}</strong>
+                  <span>{t('doctor.savedHelp')}</span>
                 </div>
               </div>
               <label>
-                {t("doctor.character")}
+                {t('doctor.character')}
                 <select
                   aria-label="Saved character"
                   value={selectedCharacterId}
                   onChange={(e) => setSelectedCharacterId(e.target.value)}
                 >
-                  <option value="">{t("doctor.select")}</option>
+                  <option value="">{t('doctor.select')}</option>
                   {characters.map((character) => (
                     <option key={character.id} value={character.id}>
                       {character.name} · {character.league}
-                      {character.level ? ` · Lv ${character.level}` : ""}
+                      {character.level ? ` · Lv ${character.level}` : ''}
                     </option>
                   ))}
                 </select>
@@ -472,12 +391,8 @@ export function BuildDoctorPage() {
                 disabled={!selectedCharacterId || importLoading}
                 onClick={loadCharacter}
               >
-                {importLoading ? (
-                  <LoaderCircle className="spin" />
-                ) : (
-                  <HeartPulse />
-                )}
-                {t("doctor.load")}
+                {importLoading ? <LoaderCircle className="spin" /> : <HeartPulse />}
+                {t('doctor.load')}
               </button>
             </div>
             {loadedCharacter && (
@@ -485,17 +400,11 @@ export function BuildDoctorPage() {
                 <span>
                   <UserRound />
                   <b>{loadedCharacter.name}</b> · {loadedCharacter.league}
-                  {loadedCharacter.level
-                    ? ` · Level ${loadedCharacter.level}`
-                    : ""}
+                  {loadedCharacter.level ? ` · Level ${loadedCharacter.level}` : ''}
                 </span>
                 <div>
                   {poe?.connections.length ? (
-                    <button
-                      type="button"
-                      disabled={importLoading}
-                      onClick={previewOfficialSync}
-                    >
+                    <button type="button" disabled={importLoading} onClick={previewOfficialSync}>
                       <Cloud />
                       Compare with PoE
                     </button>
@@ -514,7 +423,7 @@ export function BuildDoctorPage() {
                   <span>
                     {reconciliation.differences.length
                       ? `${reconciliation.differences.length} equipment changes found. A snapshot of the current build will be created before applying.`
-                      : "Your saved equipment already matches the official character."}
+                      : 'Your saved equipment already matches the official character.'}
                   </span>
                 </div>
                 {reconciliation.differences.length > 0 && (
@@ -522,18 +431,13 @@ export function BuildDoctorPage() {
                     {reconciliation.differences.map((diff) => (
                       <span key={diff.slot}>
                         <b>{diff.slot}</b>
-                        {diff.status.replace("-", " ")}
+                        {diff.status.replace('-', ' ')}
                       </span>
                     ))}
                   </div>
                 )}
                 {reconciliation.requiresConfirmation && (
-                  <button
-                    className="primary-button"
-                    type="button"
-                    disabled={importLoading}
-                    onClick={applyOfficialSync}
-                  >
+                  <button className="primary-button" type="button" disabled={importLoading} onClick={applyOfficialSync}>
                     <Check />
                     Confirm synchronization
                   </button>
@@ -546,31 +450,20 @@ export function BuildDoctorPage() {
                 <div>
                   <strong>Official equipment synchronized</strong>
                   <span>
-                    {syncApplied
-                      .map(
-                        (change) =>
-                          `${change.slot}: ${change.status.replace("-", " ")}`,
-                      )
-                      .join(" · ")}
+                    {syncApplied.map((change) => `${change.slot}: ${change.status.replace('-', ' ')}`).join(' · ')}
                   </span>
-                  <small>
-                    A snapshot of the previous equipment was preserved for
-                    comparison.
-                  </small>
+                  <small>A snapshot of the previous equipment was preserved for comparison.</small>
                 </div>
               </div>
             )}
             <details className="build-doctor-bulk">
               <summary>
                 <Import />
-                {text(
-                  "Paste a complete equipment export",
-                  "Colar uma exportação completa dos equipamentos",
-                )}
+                {text('Paste a complete equipment export', 'Colar uma exportação completa dos equipamentos')}
               </summary>
               <div>
                 <label>
-                  {text("Equipment bundle", "Conjunto de equipamentos")}
+                  {text('Equipment bundle', 'Conjunto de equipamentos')}
                   <textarea
                     aria-label="Complete equipment export"
                     rows={8}
@@ -588,13 +481,12 @@ export function BuildDoctorPage() {
                   disabled={!bulkText.trim()}
                   onClick={previewBulkImport}
                 >
-                  {text("Review import", "Revisar importação")}
+                  {text('Review import', 'Revisar importação')}
                 </button>
                 {bulkPreview && (
                   <div className="build-doctor-import-review" role="status">
                     <strong>
-                      {bulkPreview.equipment.length}{" "}
-                      {text("items recognized", "itens reconhecidos")}
+                      {bulkPreview.equipment.length} {text('items recognized', 'itens reconhecidos')}
                     </strong>
                     <div>
                       {bulkPreview.equipment.map((item) => (
@@ -616,17 +508,14 @@ export function BuildDoctorPage() {
                       disabled={!bulkPreview.equipment.length}
                       onClick={applyBulkImport}
                     >
-                      {text(
-                        "Apply recognized items",
-                        "Aplicar itens reconhecidos",
-                      )}
+                      {text('Apply recognized items', 'Aplicar itens reconhecidos')}
                     </button>
                   </div>
                 )}
               </div>
             </details>
             <label className="build-doctor-profile">
-              {t("doctor.profile")}
+              {t('doctor.profile')}
               <select
                 aria-label="Build profile"
                 value={selectedBuildProfileId}
@@ -636,7 +525,7 @@ export function BuildDoctorPage() {
                   buildProfiles.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       {entry.name}
-                      {entry.source === "custom" ? " · Custom" : ""}
+                      {entry.source === 'custom' ? ' · Custom' : ''}
                     </option>
                   ))
                 ) : (
@@ -655,109 +544,157 @@ export function BuildDoctorPage() {
                     rows={4}
                     value={entry.itemText}
                     onChange={(e) => setSlotText(entry.slot, e.target.value)}
-                    placeholder={t("doctor.paste")}
+                    placeholder={t('doctor.paste')}
                   />
                 </article>
               ))}
             </div>
             {error && <div className="error-box">{error}</div>}
             <div className="build-actions">
-              <button
-                className="primary-button"
-                type="button"
-                onClick={diagnose}
-                disabled={loading}
-              >
+              <button className="primary-button" type="button" onClick={diagnose} disabled={loading}>
                 {loading ? <LoaderCircle className="spin" /> : <HeartPulse />}
-                {t("doctor.diagnose")}
+                {t('doctor.diagnose')}
               </button>
               {equipment.some((entry) => entry.itemText.trim()) && (
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={clearEquipment}
-                >
+                <button className="secondary-button" type="button" onClick={clearEquipment}>
                   <Eraser />
-                  {t("doctor.clear")}
+                  {t('doctor.clear')}
                 </button>
               )}
             </div>
           </section>
 
           {result && (
-            <section
-              className="card build-card"
-              data-testid="build-doctor-result"
-            >
+            <section className="card build-card" data-testid="build-doctor-result">
               <div className="build-doctor-executive">
                 <div className="build-doctor-executive-head">
                   <div>
-                    <span className="eyebrow">
-                      {text("EXECUTIVE DIAGNOSIS", "DIAGNÓSTICO EXECUTIVO")}
-                    </span>
-                    <h2>
-                      {text("Your next decisions", "Suas próximas decisões")}
-                    </h2>
+                    <span className="eyebrow">{text('EXECUTIVE DIAGNOSIS', 'DIAGNÓSTICO EXECUTIVO')}</span>
+                    <h2>{text('Your next decisions', 'Suas próximas decisões')}</h2>
                   </div>
                   <span
-                    className={`build-doctor-confidence ${result.profile.equipmentCoverage.percent >= 80 ? "high" : result.profile.equipmentCoverage.percent >= 40 ? "medium" : "low"}`}
+                    className={`build-doctor-confidence ${result.profile.equipmentCoverage.percent >= 80 ? 'high' : result.profile.equipmentCoverage.percent >= 40 ? 'medium' : 'low'}`}
                   >
-                    {result.profile.equipmentCoverage.percent}%{" "}
-                    {text(
-                      "equipment coverage",
-                      "de cobertura dos equipamentos",
-                    )}
+                    {result.profile.equipmentCoverage.percent}%{' '}
+                    {text('equipment coverage', 'de cobertura dos equipamentos')}
                   </span>
                 </div>
                 <div className="build-doctor-critical-grid">
                   <article>
                     <AlertTriangle />
-                    <small>{text("TOP PROBLEM", "PROBLEMA PRINCIPAL")}</small>
+                    <small>{text('TOP PROBLEM', 'PROBLEMA PRINCIPAL')}</small>
                     <strong>
                       {result.profile.gaps[0] ||
-                        text(
-                          "No critical tracked gap found.",
-                          "Nenhuma falha crítica identificada.",
-                        )}
+                        text('No critical tracked gap found.', 'Nenhuma falha crítica identificada.')}
                     </strong>
                   </article>
                   <article>
                     <Target />
-                    <small>{text("NEXT UPGRADE", "PRÓXIMO UPGRADE")}</small>
+                    <small>{text('NEXT UPGRADE', 'PRÓXIMO UPGRADE')}</small>
                     <strong>
                       {result.recommendedUpgradeOrder[0]?.slot ||
-                        text(
-                          "No priority available",
-                          "Nenhuma prioridade disponível",
-                        )}
+                        text('No priority available', 'Nenhuma prioridade disponível')}
                     </strong>
                     <span>{result.profile.nextMove}</span>
                   </article>
                   <article>
                     <ShieldCheck />
-                    <small>{text("SWAP RISK", "RISCO DA TROCA")}</small>
+                    <small>{text('SWAP RISK', 'RISCO DA TROCA')}</small>
                     <strong>
                       {result.alerts.length
-                        ? `${result.alerts.length} ${text("dependency warnings", "alertas de dependência")}`
-                        : text(
-                            "No tracked dependency warning",
-                            "Nenhum alerta de dependência",
-                          )}
+                        ? `${result.alerts.length} ${text('dependency warnings', 'alertas de dependência')}`
+                        : text('No tracked dependency warning', 'Nenhum alerta de dependência')}
                     </strong>
                   </article>
                 </div>
               </div>
               {result.offenceResult && (
                 <div className="doctor-offence-summary" data-testid="build-doctor-offence">
-                  <div><small>{text("VERSIONED OFFENCE", "OFENSIVA VERSIONADA")}</small><strong>{result.offenceResult.skillName} · {result.offenceResult.patch}</strong><span>{result.offenceResult.mechanicCoverage.reason}</span></div>
-                  <div><small>{text("SUSTAINED DPS", "DPS SUSTENTADO")}</small><strong>{result.offenceResult.sustainedDps ?? text("Withheld", "NÃ£o exibido")}</strong><span>{result.offenceResult.confidence} · {result.offenceResult.mechanicCoverage.status}</span></div>
-                  <div><small>{text("MISSING INPUTS", "DADOS AUSENTES")}</small><strong>{result.offenceResult.missingInputs.length}</strong><span>{result.offenceResult.missingInputs.slice(0, 2).join(" · ") || text("None", "Nenhum")}</span></div>
+                  <div>
+                    <small>{text('VERSIONED OFFENCE', 'OFENSIVA VERSIONADA')}</small>
+                    <strong>
+                      {result.offenceResult.skillName} · {result.offenceResult.patch}
+                    </strong>
+                    <span>{result.offenceResult.mechanicCoverage.reason}</span>
+                  </div>
+                  <div>
+                    <small>{text('SUSTAINED DPS', 'DPS SUSTENTADO')}</small>
+                    <strong>{result.offenceResult.sustainedDps ?? text('Withheld', 'NÃ£o exibido')}</strong>
+                    <span>
+                      {result.offenceResult.confidence} · {result.offenceResult.mechanicCoverage.status}
+                    </span>
+                  </div>
+                  <div>
+                    <small>{text('MISSING INPUTS', 'DADOS AUSENTES')}</small>
+                    <strong>{result.offenceResult.missingInputs.length}</strong>
+                    <span>{result.offenceResult.missingInputs.slice(0, 2).join(' · ') || text('None', 'Nenhum')}</span>
+                  </div>
                 </div>
               )}
-              {result.rosterCompatibility&&result.spiritFeasibility&&<section className="card deterministic-offence" data-testid="doctor-foundations"><div className="doctor-summary-grid"><div><small>{text("ROSTER CATALOG","CATÁLOGO DO ROSTER")}</small><strong>{result.rosterCompatibility.catalogPatch} · {result.rosterCompatibility.status}</strong><span>{result.rosterCompatibility.recognized?text("Class and ascendancy recognized","Classe e ascendência reconhecidas"):result.rosterCompatibility.issues.join(" ")}</span></div><div><small>SPIRIT · SET {result.spiritFeasibility.weaponSet??"?"}</small><strong>{result.spiritFeasibility.valid===null?text("Unknown","Desconhecido"):result.spiritFeasibility.valid?text("Valid","Válido"):text("Broken","Inválido")}</strong><span>{result.spiritFeasibility.availableSpirit??"?"} / {result.spiritFeasibility.reservedSpirit??"?"}</span></div><div><small>{text("ASCENDANCY COVERAGE","COBERTURA DA ASCENDÊNCIA")}</small><strong>{result.ascendancyMechanicModeled===false?text("Not modeled","Não modelado"):result.ascendancyMechanicCoverage?.length??0}</strong><span>{result.ascendancyMechanicModeled===false?text("no dedicated package for this ascendancy yet","ainda sem pacote dedicado para esta ascendência"):`${result.ascendancyMechanicCoverage?.filter((entry)=>entry.status==="unknown").length??0} ${text("unknown components","componentes desconhecidos")}`}</span></div></div>{result.criticalRegressions&&result.criticalRegressions.length>0&&<div className="category-warnings">{result.criticalRegressions.map((line)=><span key={line}><AlertTriangle/>{line}</span>)}</div>}{result.transitionBundle&&!result.transitionBundle.complete&&<p><strong>{text("Transition blocked:","Transição bloqueada:")}</strong> {result.transitionBundle.reason}</p>}</section>}
-              <div
-                className={`profile-analysis-hero ${result.profile.status.toLowerCase().replace(" ", "-")}`}
-              >
+              {result.rosterCompatibility && result.spiritFeasibility && (
+                <section className="card deterministic-offence" data-testid="doctor-foundations">
+                  <div className="doctor-summary-grid">
+                    <div>
+                      <small>{text('ROSTER CATALOG', 'CATÁLOGO DO ROSTER')}</small>
+                      <strong>
+                        {result.rosterCompatibility.catalogPatch} · {result.rosterCompatibility.status}
+                      </strong>
+                      <span>
+                        {result.rosterCompatibility.recognized
+                          ? text('Class and ascendancy recognized', 'Classe e ascendência reconhecidas')
+                          : result.rosterCompatibility.issues.join(' ')}
+                      </span>
+                    </div>
+                    <div>
+                      <small>SPIRIT · SET {result.spiritFeasibility.weaponSet ?? '?'}</small>
+                      <strong>
+                        {result.spiritFeasibility.valid === null
+                          ? text('Unknown', 'Desconhecido')
+                          : result.spiritFeasibility.valid
+                            ? text('Valid', 'Válido')
+                            : text('Broken', 'Inválido')}
+                      </strong>
+                      <span>
+                        {result.spiritFeasibility.availableSpirit ?? '?'} /{' '}
+                        {result.spiritFeasibility.reservedSpirit ?? '?'}
+                      </span>
+                    </div>
+                    <div>
+                      <small>{text('ASCENDANCY COVERAGE', 'COBERTURA DA ASCENDÊNCIA')}</small>
+                      <strong>
+                        {result.ascendancyMechanicModeled === false
+                          ? text('Not modeled', 'Não modelado')
+                          : (result.ascendancyMechanicCoverage?.length ?? 0)}
+                      </strong>
+                      <span>
+                        {result.ascendancyMechanicModeled === false
+                          ? text(
+                              'no dedicated package for this ascendancy yet',
+                              'ainda sem pacote dedicado para esta ascendência',
+                            )
+                          : `${result.ascendancyMechanicCoverage?.filter((entry) => entry.status === 'unknown').length ?? 0} ${text('unknown components', 'componentes desconhecidos')}`}
+                      </span>
+                    </div>
+                  </div>
+                  {result.criticalRegressions && result.criticalRegressions.length > 0 && (
+                    <div className="category-warnings">
+                      {result.criticalRegressions.map((line) => (
+                        <span key={line}>
+                          <AlertTriangle />
+                          {line}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {result.transitionBundle && !result.transitionBundle.complete && (
+                    <p>
+                      <strong>{text('Transition blocked:', 'Transição bloqueada:')}</strong>{' '}
+                      {result.transitionBundle.reason}
+                    </p>
+                  )}
+                </section>
+              )}
+              <div className={`profile-analysis-hero ${result.profile.status.toLowerCase().replace(' ', '-')}`}>
                 <div className="profile-score">
                   <strong>{result.profile.overallScore}</strong>
                   <span>/100</span>
@@ -768,17 +705,11 @@ export function BuildDoctorPage() {
                   <h2>{result.profile.build.name}</h2>
                   <p>
                     {result.profile.build.className}
-                    {result.profile.build.ascendancy
-                      ? ` · ${result.profile.build.ascendancy}`
-                      : ""}{" "}
-                    · {result.profile.build.mainSkill || "No main skill"} ·{" "}
-                    {result.profile.build.stage}
+                    {result.profile.build.ascendancy ? ` · ${result.profile.build.ascendancy}` : ''} ·{' '}
+                    {result.profile.build.mainSkill || 'No main skill'} · {result.profile.build.stage}
                   </p>
                   <div className="profile-tags">
-                    {[
-                      ...result.profile.build.damageTypes,
-                      ...result.profile.build.defensiveLayers,
-                    ].map((tag) => (
+                    {[...result.profile.build.damageTypes, ...result.profile.build.defensiveLayers].map((tag) => (
                       <span key={tag}>{tag}</span>
                     ))}
                   </div>
@@ -786,12 +717,9 @@ export function BuildDoctorPage() {
                 <div className="profile-coverage">
                   <small>EQUIPMENT READ</small>
                   <strong>
-                    {result.profile.equipmentCoverage.filled}/
-                    {result.profile.equipmentCoverage.total}
+                    {result.profile.equipmentCoverage.filled}/{result.profile.equipmentCoverage.total}
                   </strong>
-                  <span>
-                    {result.profile.equipmentCoverage.percent}% coverage
-                  </span>
+                  <span>{result.profile.equipmentCoverage.percent}% coverage</span>
                 </div>
               </div>
               <div className="profile-insights">
@@ -801,9 +729,7 @@ export function BuildDoctorPage() {
                     What is working
                   </h3>
                   {result.profile.strengths.length ? (
-                    result.profile.strengths.map((line) => (
-                      <span key={line}>+ {line}</span>
-                    ))
+                    result.profile.strengths.map((line) => <span key={line}>+ {line}</span>)
                   ) : (
                     <span>No confirmed strength yet.</span>
                   )}
@@ -814,9 +740,7 @@ export function BuildDoctorPage() {
                     Current gaps
                   </h3>
                   {result.profile.gaps.length ? (
-                    result.profile.gaps.map((line) => (
-                      <span key={line}>− {line}</span>
-                    ))
+                    result.profile.gaps.map((line) => <span key={line}>− {line}</span>)
                   ) : (
                     <span>No critical tracked gap found.</span>
                   )}
@@ -832,28 +756,24 @@ export function BuildDoctorPage() {
               <div className="build-section-title">
                 <HeartPulse />
                 <div>
-                  <h2>{text("Character totals", "Totais do personagem")}</h2>
+                  <h2>{text('Character totals', 'Totais do personagem')}</h2>
                   <p>
                     {text(
-                      "Computed from every pasted slot combined.",
-                      "Calculados combinando todos os slots informados.",
+                      'Computed from every pasted slot combined.',
+                      'Calculados combinando todos os slots informados.',
                     )}
                   </p>
                 </div>
               </div>
               <div className="market-search-meta">
-                {Object.entries(result.resistances.current).map(
-                  ([key, value]) => (
-                    <span key={key}>
-                      <small>
-                        {key.replace(/Resistance/i, " RES").toUpperCase()}
-                      </small>
-                      <b>
-                        {value}% ({result.resistances.missing[key]}% to cap)
-                      </b>
-                    </span>
-                  ),
-                )}
+                {Object.entries(result.resistances.current).map(([key, value]) => (
+                  <span key={key}>
+                    <small>{key.replace(/Resistance/i, ' RES').toUpperCase()}</small>
+                    <b>
+                      {value}% ({result.resistances.missing[key]}% to cap)
+                    </b>
+                  </span>
+                ))}
               </div>
               <div className="market-search-meta">
                 {Object.entries(result.attributes.total).map(([key, value]) => (
@@ -861,10 +781,8 @@ export function BuildDoctorPage() {
                     <small>{key.toUpperCase()}</small>
                     <b>
                       {value}
-                      {result.attributes.required[key]
-                        ? ` / ${result.attributes.required[key]} needed`
-                        : ""}{" "}
-                      {result.attributes.met[key] ? "" : "⚠"}
+                      {result.attributes.required[key] ? ` / ${result.attributes.required[key]} needed` : ''}{' '}
+                      {result.attributes.met[key] ? '' : '⚠'}
                     </b>
                   </span>
                 ))}
@@ -872,12 +790,8 @@ export function BuildDoctorPage() {
                   <small>SPIRIT</small>
                   <b>
                     {result.spirit.current}
-                    {result.spirit.required
-                      ? ` / ${result.spirit.required} target`
-                      : ""}
-                    {result.spirit.missing
-                      ? ` · ${result.spirit.missing} missing`
-                      : ""}
+                    {result.spirit.required ? ` / ${result.spirit.required} target` : ''}
+                    {result.spirit.missing ? ` · ${result.spirit.missing} missing` : ''}
                   </b>
                 </span>
               </div>
@@ -895,11 +809,8 @@ export function BuildDoctorPage() {
 
               {result.alerts.length > 0 && (
                 <div className="decision-warnings">
-                  <strong style={{ padding: "0 22px" }}>
-                    {text(
-                      "Swap safety alerts",
-                      "Alertas de segurança da troca",
-                    )}
+                  <strong style={{ padding: '0 22px' }}>
+                    {text('Swap safety alerts', 'Alertas de segurança da troca')}
                   </strong>
                   {result.alerts.map((a) => (
                     <span key={a.slot + a.message}>
@@ -910,43 +821,31 @@ export function BuildDoctorPage() {
                 </div>
               )}
 
-              <div
-                className="build-doctor-paperdoll"
-                aria-label="Visual equipment overview"
-              >
+              <div className="build-doctor-paperdoll" aria-label="Visual equipment overview">
                 <div className="paperdoll-avatar">
                   <UserRound />
-                  <strong>{loadedCharacter?.name || "Current build"}</strong>
+                  <strong>{loadedCharacter?.name || 'Current build'}</strong>
                   <span>Click a slot to inspect it</span>
                 </div>
                 {slotNames.map((slot) => {
-                  const data = result.slots.find(
-                    (entry) => entry.slot === slot,
-                  );
+                  const data = result.slots.find((entry) => entry.slot === slot);
                   const score = data?.overallScore ?? null;
-                  const strength =
-                    score === null
-                      ? "empty"
-                      : score < 45
-                        ? "weak"
-                        : score < 70
-                          ? "possible"
-                          : "strong";
+                  const strength = score === null ? 'empty' : score < 45 ? 'weak' : score < 70 ? 'possible' : 'strong';
                   return (
                     <button
                       type="button"
                       key={slot}
-                      className={`paperdoll-slot slot-${slot.toLowerCase().replace(/\s+/g, "-")} ${strength} ${activeSlot === slot ? "active" : ""}`}
+                      className={`paperdoll-slot slot-${slot.toLowerCase().replace(/\s+/g, '-')} ${strength} ${activeSlot === slot ? 'active' : ''}`}
                       onClick={() => {
                         setActiveSlot(slot);
-                        setCandidateItemText("");
+                        setCandidateItemText('');
                         setSimulation(null);
                       }}
-                      aria-label={`${slot}: ${data?.baseType || "Empty"}, ${score === null ? "not scored" : `${score} score`}`}
+                      aria-label={`${slot}: ${data?.baseType || 'Empty'}, ${score === null ? 'not scored' : `${score} score`}`}
                     >
                       <small>{slot}</small>
-                      <strong>{data?.baseType || "Empty"}</strong>
-                      <span>{score === null ? "—" : score}</span>
+                      <strong>{data?.baseType || 'Empty'}</strong>
+                      <span>{score === null ? '—' : score}</span>
                     </button>
                   );
                 })}
@@ -956,48 +855,34 @@ export function BuildDoctorPage() {
                 <div className="build-fit-title">
                   <Target />
                   <div>
-                    <h3>
-                      {text(
-                        "Equipment heatmap",
-                        "Mapa de qualidade dos equipamentos",
-                      )}
-                    </h3>
+                    <h3>{text('Equipment heatmap', 'Mapa de qualidade dos equipamentos')}</h3>
                     <p>
                       {text(
-                        "Select a slot to search for upgrades or simulate a replacement.",
-                        "Selecione um slot para buscar upgrades ou simular uma substituição.",
+                        'Select a slot to search for upgrades or simulate a replacement.',
+                        'Selecione um slot para buscar upgrades ou simular uma substituição.',
                       )}
                     </p>
                   </div>
                 </div>
                 <div className="equipment-heatmap">
                   {slotNames.map((slot) => {
-                    const data = result.slots.find(
-                      (entry) => entry.slot === slot,
-                    );
+                    const data = result.slots.find((entry) => entry.slot === slot);
                     const score = data?.overallScore ?? null;
-                    const level =
-                      score === null
-                        ? "empty"
-                        : score < 45
-                          ? "weak"
-                          : score < 70
-                            ? "possible"
-                            : "strong";
+                    const level = score === null ? 'empty' : score < 45 ? 'weak' : score < 70 ? 'possible' : 'strong';
                     return (
                       <button
                         type="button"
                         key={slot}
-                        className={`${level} ${activeSlot === slot ? "active" : ""}`}
+                        className={`${level} ${activeSlot === slot ? 'active' : ''}`}
                         onClick={() => {
                           setActiveSlot(slot);
-                          setCandidateItemText("");
+                          setCandidateItemText('');
                           setSimulation(null);
                         }}
                       >
                         <span>{slot}</span>
-                        <strong>{score === null ? "—" : score}</strong>
-                        <small>{data?.baseType || "Empty slot"}</small>
+                        <strong>{score === null ? '—' : score}</strong>
+                        <small>{data?.baseType || 'Empty slot'}</small>
                       </button>
                     );
                   })}
@@ -1010,8 +895,7 @@ export function BuildDoctorPage() {
                         <h3>{activeSlot}</h3>
                       </div>
                       <label>
-                        {text("Search quality", "Qualidade da busca")}{" "}
-                        <strong>{tolerance}%</strong>
+                        {text('Search quality', 'Qualidade da busca')} <strong>{tolerance}%</strong>
                         <input
                           aria-label="Upgrade search quality"
                           type="range"
@@ -1024,37 +908,23 @@ export function BuildDoctorPage() {
                       </label>
                     </div>
                     <p className="liquidity-basis">
-                      70–90% finds cheaper alternatives, 100% keeps similar
-                      values, and 105–120% asks for a stricter upgrade.
+                      70–90% finds cheaper alternatives, 100% keeps similar values, and 105–120% asks for a stricter
+                      upgrade.
                     </p>
                     <div className="upgrade-actions">
                       <button
                         type="button"
                         onClick={findUpgrade}
-                        disabled={
-                          toolLoading ||
-                          !equipment.find((entry) => entry.slot === activeSlot)
-                            ?.itemText
-                        }
+                        disabled={toolLoading || !equipment.find((entry) => entry.slot === activeSlot)?.itemText}
                       >
                         <Search />
-                        {text(
-                          "Find upgrade on Trade2",
-                          "Buscar upgrade no Trade2",
-                        )}{" "}
-                        <ExternalLink />
+                        {text('Find upgrade on Trade2', 'Buscar upgrade no Trade2')} <ExternalLink />
                       </button>
                     </div>
                     <label>
-                      {text(
-                        "Candidate item to simulate",
-                        "Item candidato para simular",
-                      )}
+                      {text('Candidate item to simulate', 'Item candidato para simular')}
                       <textarea
-                        aria-label={text(
-                          "Candidate item to simulate",
-                          "Item candidato para simular",
-                        )}
+                        aria-label={text('Candidate item to simulate', 'Item candidato para simular')}
                         rows={5}
                         value={candidateItemText}
                         onChange={(e) => setCandidateItemText(e.target.value)}
@@ -1067,42 +937,30 @@ export function BuildDoctorPage() {
                       onClick={simulateSwap}
                       disabled={toolLoading || !candidateItemText.trim()}
                     >
-                      {toolLoading ? (
-                        <LoaderCircle className="spin" />
-                      ) : (
-                        <TestTube2 />
-                      )}
-                      {text("Simulate swap", "Simular troca")}
+                      {toolLoading ? <LoaderCircle className="spin" /> : <TestTube2 />}
+                      {text('Simulate swap', 'Simular troca')}
                     </button>
                     {simulation && (
-                      <div
-                        className={`swap-simulation ${simulation.verdict.toLowerCase().replace(/ /g, "-")}`}
-                      >
+                      <div className={`swap-simulation ${simulation.verdict.toLowerCase().replace(/ /g, '-')}`}>
                         <div>
-                          <small>
-                            {text(
-                              "SIMULATION RESULT",
-                              "RESULTADO DA SIMULAÇÃO",
-                            )}
-                          </small>
+                          <small>{text('SIMULATION RESULT', 'RESULTADO DA SIMULAÇÃO')}</small>
                           <h3>{simulation.verdict}</h3>
                           <strong>
-                            {simulation.beforeScore} → {simulation.afterScore}{" "}
+                            {simulation.beforeScore} → {simulation.afterScore}{' '}
                             <em>
-                              {simulation.scoreDelta >= 0 ? "+" : ""}
+                              {simulation.scoreDelta >= 0 ? '+' : ''}
                               {simulation.scoreDelta}
                             </em>
                           </strong>
                         </div>
                         {simulation.resolvedGaps.length > 0 && (
                           <p>
-                            <b>Resolved:</b>{" "}
-                            {simulation.resolvedGaps.join(" · ")}
+                            <b>Resolved:</b> {simulation.resolvedGaps.join(' · ')}
                           </p>
                         )}
                         {simulation.newGaps.length > 0 && (
                           <p className="danger">
-                            <b>New risks:</b> {simulation.newGaps.join(" · ")}
+                            <b>New risks:</b> {simulation.newGaps.join(' · ')}
                           </p>
                         )}
                       </div>
@@ -1115,11 +973,11 @@ export function BuildDoctorPage() {
                 <div className="build-fit-title">
                   <Stethoscope />
                   <div>
-                    <h3>{text("Slot diagnosis", "Diagnóstico por slot")}</h3>
+                    <h3>{text('Slot diagnosis', 'Diagnóstico por slot')}</h3>
                     <p>
                       {text(
-                        "Stat-valuation score per slot, weakest first.",
-                        "Pontuação dos atributos por slot, começando pelo mais fraco.",
+                        'Stat-valuation score per slot, weakest first.',
+                        'Pontuação dos atributos por slot, começando pelo mais fraco.',
                       )}
                     </p>
                   </div>
@@ -1127,13 +985,11 @@ export function BuildDoctorPage() {
                 <div className="build-fit-grid">
                   {[...result.slots]
                     .filter((s) => s.baseType)
-                    .sort(
-                      (a, b) => (a.overallScore ?? 0) - (b.overallScore ?? 0),
-                    )
+                    .sort((a, b) => (a.overallScore ?? 0) - (b.overallScore ?? 0))
                     .map((s) => (
                       <article
                         key={s.slot}
-                        className={`build-fit ${result.weakestSlots.includes(s.slot) ? "weak" : (s.overallScore ?? 0) >= 68 ? "strong" : "possible"}`}
+                        className={`build-fit ${result.weakestSlots.includes(s.slot) ? 'weak' : (s.overallScore ?? 0) >= 68 ? 'strong' : 'possible'}`}
                       >
                         <div>
                           <strong>{s.slot}</strong>
@@ -1143,9 +999,7 @@ export function BuildDoctorPage() {
                           <i style={{ width: `${s.overallScore ?? 0}%` }} />
                         </div>
                         <b>{s.overallScore ?? 0}%</b>
-                        {s.wastedStats.length > 0 && (
-                          <small>Wasted: {s.wastedStats.join(", ")}</small>
-                        )}
+                        {s.wastedStats.length > 0 && <small>Wasted: {s.wastedStats.join(', ')}</small>}
                         <div className="slot-score-pills">
                           <span>OFF {s.scoreBreakdown.offence}</span>
                           <span>DEF {s.scoreBreakdown.defence}</span>
@@ -1159,33 +1013,22 @@ export function BuildDoctorPage() {
                           <div>
                             {s.statBreakdown.length ? (
                               s.statBreakdown.map((entry) => (
-                                <p
-                                  key={`${entry.stat}-${entry.value}`}
-                                  className={entry.wasted ? "wasted" : ""}
-                                >
+                                <p key={`${entry.stat}-${entry.value}`} className={entry.wasted ? 'wasted' : ''}>
                                   <b>
-                                    {entry.stat}{" "}
-                                    {entry.value > 0
-                                      ? `+${entry.value}`
-                                      : entry.value}
+                                    {entry.stat} {entry.value > 0 ? `+${entry.value}` : entry.value}
                                   </b>
                                   <em>
                                     {entry.category} · {entry.score} pts
                                   </em>
                                   <span>
                                     {entry.reason}
-                                    {entry.conditional
-                                      ? " Conditional on the current build state."
-                                      : ""}
+                                    {entry.conditional ? ' Conditional on the current build state.' : ''}
                                   </span>
                                 </p>
                               ))
                             ) : (
                               <p>
-                                <span>
-                                  No recognized stat contributions for this
-                                  slot.
-                                </span>
+                                <span>No recognized stat contributions for this slot.</span>
                               </p>
                             )}
                           </div>
@@ -1200,8 +1043,7 @@ export function BuildDoctorPage() {
                   <h3>Recommended upgrade order</h3>
                   {result.recommendedUpgradeOrder.map((entry) => (
                     <span key={entry.slot}>
-                      → {entry.slot} ({entry.budgetPriority} priority):{" "}
-                      {entry.reason}
+                      → {entry.slot} ({entry.budgetPriority} priority): {entry.reason}
                     </span>
                   ))}
                 </article>
@@ -1232,23 +1074,14 @@ export function BuildDoctorPage() {
               const current = snapshotDiagnosis(snapshots[0]),
                 previous = snapshotDiagnosis(snapshots[1]);
               if (!current || !previous) return null;
-              const delta =
-                current.profile.overallScore - previous.profile.overallScore;
+              const delta = current.profile.overallScore - previous.profile.overallScore;
               return (
                 <section className="card build-card build-doctor-snapshot-compare">
                   <div className="build-section-title">
                     <History />
                     <div>
-                      <h2>
-                        {text(
-                          "Latest snapshot comparison",
-                          "Comparação dos snapshots mais recentes",
-                        )}
-                      </h2>
-                      <p>
-                        Immutable saved states from before confirmed equipment
-                        changes.
-                      </p>
+                      <h2>{text('Latest snapshot comparison', 'Comparação dos snapshots mais recentes')}</h2>
+                      <p>Immutable saved states from before confirmed equipment changes.</p>
                     </div>
                   </div>
                   <div className="snapshot-score-change">
@@ -1256,8 +1089,8 @@ export function BuildDoctorPage() {
                       <small>PREVIOUS</small>
                       <strong>{previous.profile.overallScore}</strong>
                     </span>
-                    <b className={delta >= 0 ? "positive" : "negative"}>
-                      {delta >= 0 ? "+" : ""}
+                    <b className={delta >= 0 ? 'positive' : 'negative'}>
+                      {delta >= 0 ? '+' : ''}
                       {delta}
                     </b>
                     <span>
@@ -1272,12 +1105,12 @@ export function BuildDoctorPage() {
                         diff = after - before;
                       return (
                         <span key={key}>
-                          <small>{key.replace("Resistance", " RES")}</small>
+                          <small>{key.replace('Resistance', ' RES')}</small>
                           <b>
                             {before}% → {after}%
                           </b>
-                          <em className={diff >= 0 ? "positive" : "negative"}>
-                            {diff >= 0 ? "+" : ""}
+                          <em className={diff >= 0 ? 'positive' : 'negative'}>
+                            {diff >= 0 ? '+' : ''}
                             {diff}
                           </em>
                         </span>
@@ -1292,10 +1125,10 @@ export function BuildDoctorPage() {
               <div className="build-section-title">
                 <Coins />
                 <div>
-                  <h2>{text("Upgrade roadmaps", "Roteiros de upgrades")}</h2>
+                  <h2>{text('Upgrade roadmaps', 'Roteiros de upgrades')}</h2>
                   <p>
-                    Three allocations derived from the character's saved budget.
-                    Prices are planning limits, not verified listing prices.
+                    Three allocations derived from the character's saved budget. Prices are planning limits, not
+                    verified listing prices.
                   </p>
                 </div>
               </div>
@@ -1322,11 +1155,7 @@ export function BuildDoctorPage() {
                           </span>
                           <small>{item.reason}</small>
                           {item.tradeUrl && (
-                            <a
-                              href={item.tradeUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
+                            <a href={item.tradeUrl} target="_blank" rel="noreferrer">
                               Open Trade2 <ExternalLink />
                             </a>
                           )}
@@ -1334,10 +1163,7 @@ export function BuildDoctorPage() {
                       ))}
                     </ol>
                     {!entry.plan.purchases.length && (
-                      <p>
-                        No upgrade priority is available with the current
-                        diagnosis.
-                      </p>
+                      <p>No upgrade priority is available with the current diagnosis.</p>
                     )}
                     <button
                       className="secondary-button"
@@ -1346,41 +1172,27 @@ export function BuildDoctorPage() {
                       onClick={() => setRoadmapToSave(entry)}
                     >
                       <Save />
-                      {text("Save roadmap", "Salvar roteiro")}
+                      {text('Save roadmap', 'Salvar roteiro')}
                     </button>
                   </article>
                 ))}
               </div>
               {roadmapToSave && (
-                <div
-                  className="roadmap-confirm"
-                  role="alertdialog"
-                  aria-labelledby="roadmap-confirm-title"
-                >
+                <div className="roadmap-confirm" role="alertdialog" aria-labelledby="roadmap-confirm-title">
                   <div>
-                    <strong id="roadmap-confirm-title">
-                      Save {roadmapToSave.label} roadmap?
-                    </strong>
+                    <strong id="roadmap-confirm-title">Save {roadmapToSave.label} roadmap?</strong>
                     <span>
-                      This will add its {roadmapToSave.plan.purchases.length}{" "}
-                      recommendations to the character shopping list.
+                      This will add its {roadmapToSave.plan.purchases.length} recommendations to the character shopping
+                      list.
                     </span>
                   </div>
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => setRoadmapToSave(null)}
-                    >
+                    <button type="button" onClick={() => setRoadmapToSave(null)}>
                       Cancel
                     </button>
-                    <button
-                      className="primary-button"
-                      type="button"
-                      disabled={importLoading}
-                      onClick={saveRoadmap}
-                    >
+                    <button className="primary-button" type="button" disabled={importLoading} onClick={saveRoadmap}>
                       <Check />
-                      {text("Confirm save", "Confirmar salvamento")}
+                      {text('Confirm save', 'Confirmar salvamento')}
                     </button>
                   </div>
                 </div>

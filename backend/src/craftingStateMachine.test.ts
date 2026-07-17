@@ -1,11 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { CraftingStateMachine, applyAction, compareContinueSellBuy, evaluateAction, stateFromItem } from './craftingStateMachine.js';
+import {
+  CraftingStateMachine,
+  applyAction,
+  compareContinueSellBuy,
+  evaluateAction,
+  stateFromItem,
+} from './craftingStateMachine.js';
 import type { ItemAnalysisInput } from './engineContracts.js';
 
 const baseItem = (overrides: Partial<ItemAnalysisInput> = {}): ItemAnalysisInput => ({
-  game: 'poe2', league: '', patch: '', itemClass: 'Boots', baseType: 'Wrapped Boots', rarity: 'normal', itemLevel: 80, quality: 0,
-  corrupted: false, identified: true, sockets: [], implicitModifiers: [], prefixes: [], suffixes: [], unknownModifiers: [],
-  baseDefences: { armour: 0, evasion: 0, energyShield: 0, deflection: 0, runicWard: 0 }, ...overrides,
+  game: 'poe2',
+  league: '',
+  patch: '',
+  itemClass: 'Boots',
+  baseType: 'Wrapped Boots',
+  rarity: 'normal',
+  itemLevel: 80,
+  quality: 0,
+  corrupted: false,
+  identified: true,
+  sockets: [],
+  implicitModifiers: [],
+  prefixes: [],
+  suffixes: [],
+  unknownModifiers: [],
+  baseDefences: { armour: 0, evasion: 0, energyShield: 0, deflection: 0, runicWard: 0 },
+  ...overrides,
 });
 
 describe('craftingStateMachine currency validation', () => {
@@ -22,7 +42,79 @@ describe('craftingStateMachine currency validation', () => {
   });
 
   it('rejects adding an affix when there is no open slot', () => {
-    const full = baseItem({ rarity: 'rare', prefixes: [{ id: 'p1', text: 'a', type: 'prefix', group: 'A', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }, { id: 'p2', text: 'b', type: 'prefix', group: 'B', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }, { id: 'p3', text: 'c', type: 'prefix', group: 'C', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }], suffixes: [{ id: 's1', text: 'd', type: 'suffix', group: 'D', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }, { id: 's2', text: 'e', type: 'suffix', group: 'E', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }, { id: 's3', text: 'f', type: 'suffix', group: 'F', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }] });
+    const full = baseItem({
+      rarity: 'rare',
+      prefixes: [
+        {
+          id: 'p1',
+          text: 'a',
+          type: 'prefix',
+          group: 'A',
+          tags: [],
+          local: false,
+          crafted: false,
+          desecrated: false,
+          source: 'x',
+        },
+        {
+          id: 'p2',
+          text: 'b',
+          type: 'prefix',
+          group: 'B',
+          tags: [],
+          local: false,
+          crafted: false,
+          desecrated: false,
+          source: 'x',
+        },
+        {
+          id: 'p3',
+          text: 'c',
+          type: 'prefix',
+          group: 'C',
+          tags: [],
+          local: false,
+          crafted: false,
+          desecrated: false,
+          source: 'x',
+        },
+      ],
+      suffixes: [
+        {
+          id: 's1',
+          text: 'd',
+          type: 'suffix',
+          group: 'D',
+          tags: [],
+          local: false,
+          crafted: false,
+          desecrated: false,
+          source: 'x',
+        },
+        {
+          id: 's2',
+          text: 'e',
+          type: 'suffix',
+          group: 'E',
+          tags: [],
+          local: false,
+          crafted: false,
+          desecrated: false,
+          source: 'x',
+        },
+        {
+          id: 's3',
+          text: 'f',
+          type: 'suffix',
+          group: 'F',
+          tags: [],
+          local: false,
+          crafted: false,
+          desecrated: false,
+          source: 'x',
+        },
+      ],
+    });
     const state = stateFromItem(full);
     const result = evaluateAction(state, 'exalted-orb');
     expect(result.legal).toBe(false);
@@ -30,13 +122,46 @@ describe('craftingStateMachine currency validation', () => {
   });
 
   it('rejects actions when item level is below the goal minimum', () => {
-    const state = stateFromItem(baseItem({ rarity: 'rare', itemLevel: 40 }), { description: 'x', minimumItemLevel: 75 });
+    const state = stateFromItem(baseItem({ rarity: 'rare', itemLevel: 40 }), {
+      description: 'x',
+      minimumItemLevel: 75,
+    });
     expect(evaluateAction(state, 'exalted-orb').legal).toBe(false);
   });
 
   it('flags an existing duplicate modifier group as a conflict instead of silently allowing it', () => {
-    const state = stateFromItem(baseItem({ rarity: 'rare', prefixes: [{ id: 'p1', text: 'a', type: 'prefix', group: 'Life', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }, { id: 'p2', text: 'b', type: 'prefix', group: 'Life', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }] }));
-    expect(evaluateAction(state, 'exalted-orb').reasons.join(' ')).toMatch(/already has two modifiers from the "Life" group/i);
+    const state = stateFromItem(
+      baseItem({
+        rarity: 'rare',
+        prefixes: [
+          {
+            id: 'p1',
+            text: 'a',
+            type: 'prefix',
+            group: 'Life',
+            tags: [],
+            local: false,
+            crafted: false,
+            desecrated: false,
+            source: 'x',
+          },
+          {
+            id: 'p2',
+            text: 'b',
+            type: 'prefix',
+            group: 'Life',
+            tags: [],
+            local: false,
+            crafted: false,
+            desecrated: false,
+            source: 'x',
+          },
+        ],
+      }),
+    );
+    expect(evaluateAction(state, 'exalted-orb').reasons.join(' ')).toMatch(
+      /already has two modifiers from the "Life" group/i,
+    );
   });
 
   it('marks reversibility as false for every currency and never invents a chance for random-from-pool outcomes', () => {
@@ -55,11 +180,37 @@ describe('craftingStateMachine currency validation', () => {
   });
 
   it('caps a magic item at 1 prefix + 1 suffix instead of the rare cap', () => {
-    const state = stateFromItem(baseItem({
-      rarity: 'magic',
-      prefixes: [{ id: 'p1', text: 'a', type: 'prefix', group: 'A', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }],
-      suffixes: [{ id: 's1', text: 'b', type: 'suffix', group: 'B', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }],
-    }));
+    const state = stateFromItem(
+      baseItem({
+        rarity: 'magic',
+        prefixes: [
+          {
+            id: 'p1',
+            text: 'a',
+            type: 'prefix',
+            group: 'A',
+            tags: [],
+            local: false,
+            crafted: false,
+            desecrated: false,
+            source: 'x',
+          },
+        ],
+        suffixes: [
+          {
+            id: 's1',
+            text: 'b',
+            type: 'suffix',
+            group: 'B',
+            tags: [],
+            local: false,
+            crafted: false,
+            desecrated: false,
+            source: 'x',
+          },
+        ],
+      }),
+    );
     const result = evaluateAction(state, 'orb-of-augmentation');
     expect(result.legal).toBe(false);
     expect(result.reasons.join(' ')).toMatch(/no open affix slot/i);
@@ -100,11 +251,37 @@ describe('applyAction', () => {
   });
 
   it('Chaos Orb removes one existing affix and adds a new one, keeping the total count unchanged', () => {
-    const state = stateFromItem(baseItem({
-      rarity: 'rare',
-      prefixes: [{ id: 'p1', text: 'a', type: 'prefix', group: 'A', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }],
-      suffixes: [{ id: 's1', text: 'b', type: 'suffix', group: 'B', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }],
-    }));
+    const state = stateFromItem(
+      baseItem({
+        rarity: 'rare',
+        prefixes: [
+          {
+            id: 'p1',
+            text: 'a',
+            type: 'prefix',
+            group: 'A',
+            tags: [],
+            local: false,
+            crafted: false,
+            desecrated: false,
+            source: 'x',
+          },
+        ],
+        suffixes: [
+          {
+            id: 's1',
+            text: 'b',
+            type: 'suffix',
+            group: 'B',
+            tags: [],
+            local: false,
+            crafted: false,
+            desecrated: false,
+            source: 'x',
+          },
+        ],
+      }),
+    );
     const { state: next, evaluation } = applyAction(state, 'chaos-orb');
     expect(evaluation.legal).toBe(true);
     expect(next.prefixes.length + next.suffixes.length).toBe(2);
@@ -120,10 +297,24 @@ describe('applyAction', () => {
   });
 
   it('Chaos Orb is illegal on a magic item (PoE2 restricts it to rare items)', () => {
-    const state = stateFromItem(baseItem({
-      rarity: 'magic',
-      prefixes: [{ id: 'p1', text: 'a', type: 'prefix', group: 'A', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }],
-    }));
+    const state = stateFromItem(
+      baseItem({
+        rarity: 'magic',
+        prefixes: [
+          {
+            id: 'p1',
+            text: 'a',
+            type: 'prefix',
+            group: 'A',
+            tags: [],
+            local: false,
+            crafted: false,
+            desecrated: false,
+            source: 'x',
+          },
+        ],
+      }),
+    );
     const result = evaluateAction(state, 'chaos-orb');
     expect(result.legal).toBe(false);
   });
@@ -158,10 +349,24 @@ describe('applyAction', () => {
   });
 
   it('Regal Orb adds one new affix on top of the existing magic modifiers', () => {
-    const state = stateFromItem(baseItem({
-      rarity: 'magic',
-      prefixes: [{ id: 'p1', text: 'a', type: 'prefix', group: 'A', tags: [], local: false, crafted: false, desecrated: false, source: 'x' }],
-    }));
+    const state = stateFromItem(
+      baseItem({
+        rarity: 'magic',
+        prefixes: [
+          {
+            id: 'p1',
+            text: 'a',
+            type: 'prefix',
+            group: 'A',
+            tags: [],
+            local: false,
+            crafted: false,
+            desecrated: false,
+            source: 'x',
+          },
+        ],
+      }),
+    );
     const { state: next, evaluation } = applyAction(state, 'regal-orb');
     expect(evaluation.legal).toBe(true);
     expect(next.rarity).toBe('rare');

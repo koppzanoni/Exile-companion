@@ -1,117 +1,486 @@
-import type { ActionEvaluation, Analysis, AppSettings, BuildDoctorResult, BuildFitProfile, BuildImportResult, BuildProfile, BuildSwapSimulation, CatalogVersion, CharacterActionPlan, CharacterAlert, CharacterBuildKnowledge, CharacterBuildLoadout, CharacterDetail, CharacterEvolution, CharacterInput, CharacterSummary, CharacterTotals, CraftComparison, CraftGoal, CraftingCurrencyDef, CraftingHistoryEntry, CraftingItemState, CraftPlan, CustomBuildProfileInput, EquipmentSlotInput, GeminiChatResponse, ItemInput, KnowledgeStatus, LevelingSearchResult, LoadoutSimulation, MarketHistoryResult, MarketUpgradeCandidates, NetUpgradeCosts, NormalizedItem, PoeOAuthStatus, PoeRemoteCharacter, ProfileCatalogStatus, ProfileDiagnostic, PublicCharacterProfile, PublicProfileComparison, PublicProfileSnapshot, PurchaseHistory, RaceReview, RankedUpgradeCandidate, ReconciliationResult, RecommendationCalibration, ReplacementSaleDraft, ShoppingPlanItem, UpgradeBudgetPlan, UpgradeCandidateInput } from './types';
-import type {RosterResponse} from './poeClasses';
+import type {
+  ActionEvaluation,
+  Analysis,
+  AppSettings,
+  BuildDoctorResult,
+  BuildFitProfile,
+  BuildImportResult,
+  BuildProfile,
+  BuildSwapSimulation,
+  CatalogVersion,
+  CharacterActionPlan,
+  CharacterAlert,
+  CharacterBuildKnowledge,
+  CharacterBuildLoadout,
+  CharacterDetail,
+  CharacterEvolution,
+  CharacterInput,
+  CharacterSummary,
+  CharacterTotals,
+  CraftComparison,
+  CraftGoal,
+  CraftingCurrencyDef,
+  CraftingHistoryEntry,
+  CraftingItemState,
+  CraftPlan,
+  CustomBuildProfileInput,
+  EquipmentSlotInput,
+  GeminiChatResponse,
+  ItemInput,
+  KnowledgeStatus,
+  LevelingSearchResult,
+  LoadoutSimulation,
+  MarketHistoryResult,
+  MarketUpgradeCandidates,
+  NetUpgradeCosts,
+  NormalizedItem,
+  PoeOAuthStatus,
+  PoeRemoteCharacter,
+  ProfileCatalogStatus,
+  ProfileDiagnostic,
+  PublicCharacterProfile,
+  PublicProfileComparison,
+  PublicProfileSnapshot,
+  PurchaseHistory,
+  RaceReview,
+  RankedUpgradeCandidate,
+  ReconciliationResult,
+  RecommendationCalibration,
+  ReplacementSaleDraft,
+  ShoppingPlanItem,
+  UpgradeBudgetPlan,
+  UpgradeCandidateInput,
+} from './types';
+import type { RosterResponse } from './poeClasses';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-  const sessionCsrf=localStorage.getItem('session-csrf');
-  const response = await fetch(`${baseUrl}${url}`, { ...options, credentials:'include', headers: { 'Content-Type': 'application/json', ...(import.meta.env.VITE_APP_ACCESS_TOKEN?{'x-app-token':import.meta.env.VITE_APP_ACCESS_TOKEN}:{}), ...((sessionCsrf||import.meta.env.VITE_APP_CSRF_TOKEN)?{'x-csrf-token':sessionCsrf||import.meta.env.VITE_APP_CSRF_TOKEN}:{}), ...options?.headers } });
+  const sessionCsrf = localStorage.getItem('session-csrf');
+  const response = await fetch(`${baseUrl}${url}`, {
+    ...options,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(import.meta.env.VITE_APP_ACCESS_TOKEN ? { 'x-app-token': import.meta.env.VITE_APP_ACCESS_TOKEN } : {}),
+      ...(sessionCsrf || import.meta.env.VITE_APP_CSRF_TOKEN
+        ? { 'x-csrf-token': sessionCsrf || import.meta.env.VITE_APP_CSRF_TOKEN }
+        : {}),
+      ...options?.headers,
+    },
+  });
   const body = response.status === 204 ? null : await response.json();
   if (!response.ok) throw new Error(body?.error || `Request failed (${response.status})`);
   return body;
 }
 
 export const api = {
-  roster:()=>request<RosterResponse>('/api/roster'),
-  serviceStatus:()=>request<{checkedAt:string;services:Record<'database'|'poe'|'gemini'|'trade2',{status:string;source:string;confidence:'Low'|'Medium'|'High'}>}>('/api/service-status'),
-  preferences:()=>request<{persisted:boolean;activeCharacterId:number|null;language:'en'|'pt-BR';experienceMode:'beginner'|'advanced';onboardingStep:number;onboardingComplete:boolean}>('/api/preferences'),
-  savePreferences:(body:{activeCharacterId:number|null;language:'en'|'pt-BR';experienceMode:'beginner'|'advanced';onboardingStep:number;onboardingComplete:boolean})=>request<{persisted:boolean}>('/api/preferences',{method:'PUT',body:JSON.stringify(body)}),
-  authMe:()=>request<{authenticated:boolean;required?:boolean;user?:{id:number;email:string;displayName:string};csrfToken?:string}>('/api/auth/me'),
-  authLogin:(body:{email:string;password:string})=>request<{user:{id:number;email:string;displayName:string};csrfToken:string}>('/api/auth/login',{method:'POST',body:JSON.stringify(body)}),
-  authRegister:(body:{email:string;password:string;displayName:string})=>request<{user:{id:number;email:string;displayName:string};csrfToken:string}>('/api/auth/register',{method:'POST',body:JSON.stringify(body)}),
-  authPoeStart:()=>request<{url:string}>('/api/auth/poe/start'),
-  authLogout:()=>request<void>('/api/auth/logout',{method:'POST',body:'{}'}),
-  authSessions:()=>request<{sessions:Array<{id:string;createdAt:string;expiresAt:string;current:boolean}>}>('/api/auth/sessions'),
-  revokeSession:(id:string)=>request<void>(`/api/auth/sessions/${encodeURIComponent(id)}`,{method:'DELETE',body:'{}'}),
-  changePassword:(currentPassword:string,newPassword:string)=>request<{ok:true;otherSessionsRevoked:boolean}>('/api/auth/password/change',{method:'POST',body:JSON.stringify({currentPassword,newPassword})}),
-  accountExport:()=>request<Record<string,unknown>>('/api/account/export'),
-  deleteAccount:(password:string,confirmation:string)=>request<void>('/api/account',{method:'DELETE',body:JSON.stringify({password,confirmation})}),
-  geminiUsage:()=>request<{daily:{requests:number;estimatedTokens:number;estimatedCostUsd:number;blocked:number};recent:Array<{model:string|null;status:string;estimatedTokens:number;estimatedCostUsd:number;latencyMs:number;createdAt:string}>;pricingConfigured:boolean}>('/api/gemini/usage'),
-  operations:()=>request<{jobs:{total:number;overdue:number;locked:number;failing:number};requests:{total:number;averageMs:number;serverErrors:number};gemini:{requests:number;estimatedTokens:number;estimatedCostUsd:number;failures:number};backups:Array<{status:string;target:string;verified:number;createdAt:string}>;database:{ok:boolean};generatedAt:string}>('/api/admin/operations'),
-  analyze: (body: { league: string; itemText: string; equippedItemText?: string; characterTotals?:CharacterTotals; selectedBuildProfileId?:string; item: Partial<ItemInput>; manualListings: string; divineToExalted: number; characterId?:number }) => request<Analysis>('/api/analyze', { method: 'POST', body: JSON.stringify(body) }),
-  buildUrl: (body: unknown) => request<{ url: string }>('/api/trade/build-url', { method: 'POST', body: JSON.stringify(body) }),
-  parseUrl: (url: string) => request<Record<string, unknown>>('/api/trade/parse-url', { method: 'POST', body: JSON.stringify({ url }) }),
+  roster: () => request<RosterResponse>('/api/roster'),
+  serviceStatus: () =>
+    request<{
+      checkedAt: string;
+      services: Record<
+        'database' | 'poe' | 'gemini' | 'trade2',
+        { status: string; source: string; confidence: 'Low' | 'Medium' | 'High' }
+      >;
+    }>('/api/service-status'),
+  preferences: () =>
+    request<{
+      persisted: boolean;
+      activeCharacterId: number | null;
+      language: 'en' | 'pt-BR';
+      experienceMode: 'beginner' | 'advanced';
+      onboardingStep: number;
+      onboardingComplete: boolean;
+    }>('/api/preferences'),
+  savePreferences: (body: {
+    activeCharacterId: number | null;
+    language: 'en' | 'pt-BR';
+    experienceMode: 'beginner' | 'advanced';
+    onboardingStep: number;
+    onboardingComplete: boolean;
+  }) => request<{ persisted: boolean }>('/api/preferences', { method: 'PUT', body: JSON.stringify(body) }),
+  authMe: () =>
+    request<{
+      authenticated: boolean;
+      required?: boolean;
+      user?: { id: number; email: string; displayName: string };
+      csrfToken?: string;
+    }>('/api/auth/me'),
+  authLogin: (body: { email: string; password: string }) =>
+    request<{ user: { id: number; email: string; displayName: string }; csrfToken: string }>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  authRegister: (body: { email: string; password: string; displayName: string }) =>
+    request<{ user: { id: number; email: string; displayName: string }; csrfToken: string }>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  authPoeStart: () => request<{ url: string }>('/api/auth/poe/start'),
+  authLogout: () => request<void>('/api/auth/logout', { method: 'POST', body: '{}' }),
+  authSessions: () =>
+    request<{ sessions: Array<{ id: string; createdAt: string; expiresAt: string; current: boolean }> }>(
+      '/api/auth/sessions',
+    ),
+  revokeSession: (id: string) =>
+    request<void>(`/api/auth/sessions/${encodeURIComponent(id)}`, { method: 'DELETE', body: '{}' }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ ok: true; otherSessionsRevoked: boolean }>('/api/auth/password/change', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  accountExport: () => request<Record<string, unknown>>('/api/account/export'),
+  deleteAccount: (password: string, confirmation: string) =>
+    request<void>('/api/account', { method: 'DELETE', body: JSON.stringify({ password, confirmation }) }),
+  geminiUsage: () =>
+    request<{
+      daily: { requests: number; estimatedTokens: number; estimatedCostUsd: number; blocked: number };
+      recent: Array<{
+        model: string | null;
+        status: string;
+        estimatedTokens: number;
+        estimatedCostUsd: number;
+        latencyMs: number;
+        createdAt: string;
+      }>;
+      pricingConfigured: boolean;
+    }>('/api/gemini/usage'),
+  operations: () =>
+    request<{
+      jobs: { total: number; overdue: number; locked: number; failing: number };
+      requests: { total: number; averageMs: number; serverErrors: number };
+      gemini: { requests: number; estimatedTokens: number; estimatedCostUsd: number; failures: number };
+      backups: Array<{ status: string; target: string; verified: number; createdAt: string }>;
+      database: { ok: boolean };
+      generatedAt: string;
+    }>('/api/admin/operations'),
+  analyze: (body: {
+    league: string;
+    itemText: string;
+    equippedItemText?: string;
+    characterTotals?: CharacterTotals;
+    selectedBuildProfileId?: string;
+    item: Partial<ItemInput>;
+    manualListings: string;
+    divineToExalted: number;
+    characterId?: number;
+  }) => request<Analysis>('/api/analyze', { method: 'POST', body: JSON.stringify(body) }),
+  buildUrl: (body: unknown) =>
+    request<{ url: string }>('/api/trade/build-url', { method: 'POST', body: JSON.stringify(body) }),
+  parseUrl: (url: string) =>
+    request<Record<string, unknown>>('/api/trade/parse-url', { method: 'POST', body: JSON.stringify({ url }) }),
   checks: () => request<any[]>('/api/checks'),
   check: (id: string) => request<any>(`/api/checks/${id}`),
   deleteCheck: (id: number) => request<void>(`/api/checks/${id}`, { method: 'DELETE' }),
   settings: () => request<AppSettings>('/api/settings'),
-  saveSettings: (body: AppSettings) => request<AppSettings>('/api/settings', { method: 'PUT', body: JSON.stringify(body) }),
+  saveSettings: (body: AppSettings) =>
+    request<AppSettings>('/api/settings', { method: 'PUT', body: JSON.stringify(body) }),
   buildProfile: () => request<{ profile: BuildProfile | null }>('/api/build-profile'),
-  importBuildProfile: (url: string) => request<BuildImportResult>('/api/build-profile/import', { method: 'POST', body: JSON.stringify({ url }) }),
-  saveBuildProfile: (body: BuildProfile) => request<{ profile: BuildProfile }>('/api/build-profile', { method: 'PUT', body: JSON.stringify(body) }),
+  importBuildProfile: (url: string) =>
+    request<BuildImportResult>('/api/build-profile/import', { method: 'POST', body: JSON.stringify({ url }) }),
+  saveBuildProfile: (body: BuildProfile) =>
+    request<{ profile: BuildProfile }>('/api/build-profile', { method: 'PUT', body: JSON.stringify(body) }),
   deleteBuildProfile: () => request<void>('/api/build-profile', { method: 'DELETE' }),
-  buildProfiles: () => request<{profiles:BuildFitProfile[]}>('/api/build-profiles'),
-  createCustomBuildProfile: (body:CustomBuildProfileInput) => request<{profile:BuildFitProfile}>('/api/build-profiles',{method:'POST',body:JSON.stringify(body)}),
-  updateCustomBuildProfile: (id:string,body:CustomBuildProfileInput) => request<{profile:BuildFitProfile}>(`/api/build-profiles/${encodeURIComponent(id)}`,{method:'PUT',body:JSON.stringify(body)}),
-  deleteCustomBuildProfile: (id:string) => request<void>(`/api/build-profiles/${encodeURIComponent(id)}`,{method:'DELETE'}),
-  raceReviews: () => request<{ reviews:RaceReview[] }>('/api/race-reviews'),
-  addRaceReview: (body:Omit<RaceReview,'id'|'createdAt'>) => request<{ review:RaceReview }>('/api/race-reviews', { method:'POST', body:JSON.stringify(body) }),
-  deleteRaceReview: (id:number) => request<void>(`/api/race-reviews/${id}`, { method:'DELETE' }),
-  levelingSearch: (body:{guideUrl:string;level:number;league:string;maxPrice:number;currency?:'exalted'|'divine'|'chaos';equipment?:EquipmentSlotInput[]}) => request<LevelingSearchResult>('/api/leveling/search', { method:'POST', body:JSON.stringify(body) }),
-  normalizeItem: (body:{text:string;league?:string;patch?:string}) => request<{item:NormalizedItem}>('/api/item/normalize',{method:'POST',body:JSON.stringify(body)}),
-  craftingPlan: (body:{text:string;league?:string;goal:{description:string;minimumItemLevel?:number}}) => request<CraftPlan>('/api/crafting/plan',{method:'POST',body:JSON.stringify(body)}),
+  buildProfiles: () => request<{ profiles: BuildFitProfile[] }>('/api/build-profiles'),
+  createCustomBuildProfile: (body: CustomBuildProfileInput) =>
+    request<{ profile: BuildFitProfile }>('/api/build-profiles', { method: 'POST', body: JSON.stringify(body) }),
+  updateCustomBuildProfile: (id: string, body: CustomBuildProfileInput) =>
+    request<{ profile: BuildFitProfile }>(`/api/build-profiles/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteCustomBuildProfile: (id: string) =>
+    request<void>(`/api/build-profiles/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  raceReviews: () => request<{ reviews: RaceReview[] }>('/api/race-reviews'),
+  addRaceReview: (body: Omit<RaceReview, 'id' | 'createdAt'>) =>
+    request<{ review: RaceReview }>('/api/race-reviews', { method: 'POST', body: JSON.stringify(body) }),
+  deleteRaceReview: (id: number) => request<void>(`/api/race-reviews/${id}`, { method: 'DELETE' }),
+  levelingSearch: (body: {
+    guideUrl: string;
+    level: number;
+    league: string;
+    maxPrice: number;
+    currency?: 'exalted' | 'divine' | 'chaos';
+    equipment?: EquipmentSlotInput[];
+  }) => request<LevelingSearchResult>('/api/leveling/search', { method: 'POST', body: JSON.stringify(body) }),
+  normalizeItem: (body: { text: string; league?: string; patch?: string }) =>
+    request<{ item: NormalizedItem }>('/api/item/normalize', { method: 'POST', body: JSON.stringify(body) }),
+  craftingPlan: (body: { text: string; league?: string; goal: { description: string; minimumItemLevel?: number } }) =>
+    request<CraftPlan>('/api/crafting/plan', { method: 'POST', body: JSON.stringify(body) }),
   knowledgeStatus: () => request<KnowledgeStatus>('/api/admin/knowledge-status'),
-  buildDoctor: (body:{equipment:EquipmentSlotInput[];selectedBuildProfileId?:string}) => request<BuildDoctorResult>('/api/build-doctor',{method:'POST',body:JSON.stringify(body)}),
-  buildDoctorUpgradeSearch: (body:{itemText:string;league:string;tolerance:number;preserveStats?:string[]}) => request<{url:string;tolerance:number;mode:string;protectedStats:string[]}>('/api/build-doctor/upgrade-search',{method:'POST',body:JSON.stringify(body)}),
-  simulateBuildSwap: (body:{equipment:EquipmentSlotInput[];slot:string;candidateItemText:string;selectedBuildProfileId?:string}) => request<BuildSwapSimulation>('/api/build-doctor/simulate-swap',{method:'POST',body:JSON.stringify(body)}),
-  geminiChat:(body:{mode:'build'|'sale';message:string;context:Record<string,unknown>;language:'en'|'pt-BR';history?:Array<{role:'user'|'assistant';text:string}>;conversationId?:number;characterId?:number;checkId?:number})=>request<GeminiChatResponse>('/api/gemini/chat',{method:'POST',body:JSON.stringify(body)}),
-  geminiConversations:(characterId?:number)=>request<{conversations:Array<{id:number;mode:'build'|'sale';title:string;characterId:number|null;updatedAt:string}>}>(`/api/gemini/conversations${characterId?`?characterId=${characterId}`:''}`),
-  geminiConversation:(id:number)=>request<{conversation:{id:number;title:string};messages:Array<{id:number;role:'user'|'assistant';text:string;metadataJson?:string;createdAt:string}>}>(`/api/gemini/conversations/${id}`),
-  updateGeminiConversation:(id:number,body:{title?:string;archived?:boolean})=>request<{ok:true}>(`/api/gemini/conversations/${id}`,{method:'PATCH',body:JSON.stringify(body)}),
-  createCharacterSnapshot:(characterId:number,patch='unknown')=>request<{snapshot:unknown}>(`/api/characters/${characterId}/snapshots`,{method:'POST',body:JSON.stringify({patch})}),
-  characterSnapshots:(characterId:number)=>request<{snapshots:Array<Record<string,unknown>>}>(`/api/characters/${characterId}/snapshots`),
-  characterLoadout:(characterId:number)=>request<{loadout:CharacterBuildLoadout|null}>(`/api/characters/${characterId}/loadout`),
-  saveCharacterLoadout:(characterId:number,body:CharacterBuildLoadout)=>request<{loadout:CharacterBuildLoadout}>(`/api/characters/${characterId}/loadout`,{method:'PUT',body:JSON.stringify(body)}),
-  characterBuildKnowledge:(characterId:number)=>request<CharacterBuildKnowledge>(`/api/characters/${characterId}/build-knowledge`),
-  simulateCharacterLoadout:(characterId:number,body:CharacterBuildLoadout)=>request<LoadoutSimulation>(`/api/characters/${characterId}/loadout/simulate`,{method:'POST',body:JSON.stringify(body)}),
-  characterActionPlan:(characterId:number,budget?:number)=>request<CharacterActionPlan>(`/api/characters/${characterId}/action-plan${budget!==undefined?`?budget=${budget}`:''}`),
-  persistCharacterActionPlan:(characterId:number,purchases:CharacterActionPlan['purchases'])=>request<{ids:number[]}>(`/api/characters/${characterId}/action-plan/persist`,{method:'POST',body:JSON.stringify({confirmed:true,purchases})}),
-  shoppingPlan:(characterId:number)=>request<{items:ShoppingPlanItem[]}>(`/api/characters/${characterId}/shopping-plan`),
-  updateShoppingPlanItem:(id:number,body:{status:ShoppingPlanItem['status'];note?:string;listingId?:string;itemText?:string;price?:number;tradeUrl?:string;scoreDelta?:number})=>request<{ok:true}>(`/api/shopping-plan/${id}`,{method:'PUT',body:JSON.stringify(body)}),
-  equipShoppingPlanItem:(id:number,createSaleDraft=true)=>request<{purchaseId:number;scoreBefore:number;scoreAfter:number;scoreDelta:number;budgetRemaining:number;saleDraftCreated:boolean}>(`/api/shopping-plan/${id}/equip`,{method:'POST',body:JSON.stringify({confirmed:true,createSaleDraft})}),
-  purchaseHistory:(characterId:number)=>request<PurchaseHistory>(`/api/characters/${characterId}/purchase-history`),
-  characterEvolution:(characterId:number)=>request<CharacterEvolution>(`/api/characters/${characterId}/evolution`),
-  netUpgradeCosts:(characterId:number)=>request<NetUpgradeCosts>(`/api/characters/${characterId}/net-upgrade-costs`),
-  reversePurchase:(id:number,reason:string)=>request<{ok:true;refunded:number}>(`/api/purchases/${id}/reverse`,{method:'POST',body:JSON.stringify({confirmed:true,reason})}),
-  replacementSales:(characterId:number)=>request<{drafts:ReplacementSaleDraft[]}>(`/api/characters/${characterId}/replacement-sales`),
-  listReplacementSale:(id:number,body:{price:number;currency:'exalted'|'divine';league:string;notes?:string})=>request<{saleId:number}>(`/api/replacement-sales/${id}/list`,{method:'POST',body:JSON.stringify(body)}),
-  marketUpgradeCandidates:(characterId:number,slot:string)=>request<MarketUpgradeCandidates>(`/api/characters/${characterId}/market-candidates/${encodeURIComponent(slot)}`),
-  monitorShoppingItem:(id:number)=>request<{checkedAt:string;events:Array<{type:string;message:string}>;bestCandidate:unknown;dataSource:string;sampleSize:number;warning:string}>(`/api/shopping-plan/${id}/monitor`,{method:'POST'}),
-  characterAlerts:(characterId:number)=>request<{alerts:CharacterAlert[]}>(`/api/characters/${characterId}/alerts`),
-  readAlert:(id:number)=>request<{ok:true}>(`/api/alerts/${id}/read`,{method:'PUT',body:'{}'}),
-  calibration:(characterId:number)=>request<RecommendationCalibration>(`/api/characters/${characterId}/calibration`),
-  reconcileCharacter:(characterId:number,connectionId:number,confirmed=false)=>request<ReconciliationResult>(`/api/characters/${characterId}/reconcile`,{method:'POST',body:JSON.stringify({connectionId,confirmed})}),
-  filteredEvolution:(characterId:number,filters:{patch?:string;from?:string;to?:string})=>request<CharacterEvolution>(`/api/characters/${characterId}/evolution-filtered?${new URLSearchParams(Object.entries(filters).filter(([,value])=>value) as Array<[string,string]>).toString()}`),
-  evolutionCsvUrl:(characterId:number,filters:{patch?:string;from?:string;to?:string})=>`${(import.meta.env.VITE_API_BASE_URL||'').replace(/\/$/,'')}/api/characters/${characterId}/evolution.csv?${new URLSearchParams(Object.entries(filters).filter(([,value])=>value) as Array<[string,string]>).toString()}`,
-  executeGeminiTool:(body:{characterId:number;action:'inspect_slot'|'search_upgrade'|'view_shopping_plan';slot?:string})=>request<{action:string;result:unknown;mutated:boolean}>('/api/gemini/tools/execute',{method:'POST',body:JSON.stringify(body)}),
-  recommendationFeedback:(body:{checkId?:number;characterId?:number;verdict:'useful'|'incorrect'|'bought'|'sold'|'no-results'|'wrong-price';note?:string;outcome?:Record<string,unknown>})=>request<{id:number}>('/api/recommendation-feedback',{method:'POST',body:JSON.stringify(body)}),
-  sales:()=>request<{sales:Array<Record<string,unknown>>}>('/api/sales'),
-  saleAdvice:()=>request<{advice:Array<{saleId:number;action:'hold'|'review'|'reprice';suggestedPrice:number|null;ageDays:number;confidence:string;reasons:string[]}>;basis:string}>('/api/sales/advice'),
-  createSale:(body:{checkId?:number;itemName:string;league:string;listedPrice:number;currency:'exalted'|'divine';notes?:string})=>request<{id:number}>('/api/sales',{method:'POST',body:JSON.stringify(body)}),
-  updateSale:(id:number,body:{status?:'listed'|'sold'|'withdrawn';price?:number;finalPrice?:number;notes?:string})=>request<{ok:true}>(`/api/sales/${id}`,{method:'PUT',body:JSON.stringify(body)}),
-  compareUpgradeCandidates:(body:{equipment:EquipmentSlotInput[];candidates:UpgradeCandidateInput[];selectedBuildProfileId?:string})=>request<{candidates:RankedUpgradeCandidate[]}>('/api/build-doctor/compare-candidates',{method:'POST',body:JSON.stringify(body)}),
-  planUpgrades:(body:{equipment:EquipmentSlotInput[];candidates:UpgradeCandidateInput[];budget:number;selectedBuildProfileId?:string})=>request<UpgradeBudgetPlan>('/api/build-doctor/upgrade-plan',{method:'POST',body:JSON.stringify(body)}),
-  characters: () => request<{characters:CharacterSummary[]}>('/api/characters'),
-  character: (id:number) => request<CharacterDetail>(`/api/characters/${id}`),
-  createCharacter: (body:CharacterInput) => request<{character:CharacterSummary}>('/api/characters',{method:'POST',body:JSON.stringify(body)}),
-  updateCharacter: (id:number,body:CharacterInput) => request<{character:CharacterSummary}>(`/api/characters/${id}`,{method:'PUT',body:JSON.stringify(body)}),
-  saveCharacterEquipment: (id:number,equipment:EquipmentSlotInput[]) => request<{equipment:EquipmentSlotInput[]}>(`/api/characters/${id}/equipment`,{method:'PUT',body:JSON.stringify({equipment})}),
-  deleteCharacter: (id:number) => request<void>(`/api/characters/${id}`,{method:'DELETE'}),
-  craftingState: (body:{text:string;league?:string;patch?:string;goal?:CraftGoal;estimatedValue?:number}) => request<{state:CraftingItemState;legalActions:ActionEvaluation[];currencies:CraftingCurrencyDef[]}>('/api/crafting/state',{method:'POST',body:JSON.stringify(body)}),
-  craftingApply: (body:{state:CraftingItemState;currencyId:string}) => request<{state:CraftingItemState;evaluation:ActionEvaluation;legalActions:ActionEvaluation[]}>('/api/crafting/apply',{method:'POST',body:JSON.stringify(body)}),
-  craftingCompare: (body:{state:CraftingItemState;sellValue?:number;buyPrice?:number}) => request<CraftComparison>('/api/crafting/compare',{method:'POST',body:JSON.stringify(body)}),
-  craftingHistory: (characterId?:number) => request<{history:CraftingHistoryEntry[]}>(`/api/crafting/history${characterId?`?characterId=${characterId}`:''}`),
-  confirmCraftingAction: (body:{characterId?:number;action:string;before:CraftingItemState;after:CraftingItemState;valueBefore?:number;valueAfter?:number}) => request<{id:number;gainLoss:number|null}>('/api/crafting/history',{method:'POST',body:JSON.stringify(body)}),
-  marketHistory: (baseType:string,league:string) => request<MarketHistoryResult>(`/api/market-history?${new URLSearchParams({baseType,league})}`),
-  patchVersions: () => request<{versions:CatalogVersion[]}>('/api/admin/patch/versions'),
-  stagePatch: (body:{patch:string;dataVersion:string;source:string;modifiers:unknown[]}) => request<{version:CatalogVersion}>('/api/admin/patch/stage',{method:'POST',body:JSON.stringify(body)}),
-  activatePatch: (id:number) => request<{version:CatalogVersion}>(`/api/admin/patch/${id}/activate`,{method:'POST'}),
-  rollbackPatch: (id:number) => request<{version:CatalogVersion}>(`/api/admin/patch/${id}/rollback`,{method:'POST'}),
+  buildDoctor: (body: { equipment: EquipmentSlotInput[]; selectedBuildProfileId?: string }) =>
+    request<BuildDoctorResult>('/api/build-doctor', { method: 'POST', body: JSON.stringify(body) }),
+  buildDoctorUpgradeSearch: (body: { itemText: string; league: string; tolerance: number; preserveStats?: string[] }) =>
+    request<{ url: string; tolerance: number; mode: string; protectedStats: string[] }>(
+      '/api/build-doctor/upgrade-search',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  simulateBuildSwap: (body: {
+    equipment: EquipmentSlotInput[];
+    slot: string;
+    candidateItemText: string;
+    selectedBuildProfileId?: string;
+  }) => request<BuildSwapSimulation>('/api/build-doctor/simulate-swap', { method: 'POST', body: JSON.stringify(body) }),
+  geminiChat: (body: {
+    mode: 'build' | 'sale';
+    message: string;
+    context: Record<string, unknown>;
+    language: 'en' | 'pt-BR';
+    history?: Array<{ role: 'user' | 'assistant'; text: string }>;
+    conversationId?: number;
+    characterId?: number;
+    checkId?: number;
+  }) => request<GeminiChatResponse>('/api/gemini/chat', { method: 'POST', body: JSON.stringify(body) }),
+  geminiConversations: (characterId?: number) =>
+    request<{
+      conversations: Array<{
+        id: number;
+        mode: 'build' | 'sale';
+        title: string;
+        characterId: number | null;
+        updatedAt: string;
+      }>;
+    }>(`/api/gemini/conversations${characterId ? `?characterId=${characterId}` : ''}`),
+  geminiConversation: (id: number) =>
+    request<{
+      conversation: { id: number; title: string };
+      messages: Array<{
+        id: number;
+        role: 'user' | 'assistant';
+        text: string;
+        metadataJson?: string;
+        createdAt: string;
+      }>;
+    }>(`/api/gemini/conversations/${id}`),
+  updateGeminiConversation: (id: number, body: { title?: string; archived?: boolean }) =>
+    request<{ ok: true }>(`/api/gemini/conversations/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  createCharacterSnapshot: (characterId: number, patch = 'unknown') =>
+    request<{ snapshot: unknown }>(`/api/characters/${characterId}/snapshots`, {
+      method: 'POST',
+      body: JSON.stringify({ patch }),
+    }),
+  characterSnapshots: (characterId: number) =>
+    request<{ snapshots: Array<Record<string, unknown>> }>(`/api/characters/${characterId}/snapshots`),
+  characterLoadout: (characterId: number) =>
+    request<{ loadout: CharacterBuildLoadout | null }>(`/api/characters/${characterId}/loadout`),
+  saveCharacterLoadout: (characterId: number, body: CharacterBuildLoadout) =>
+    request<{ loadout: CharacterBuildLoadout }>(`/api/characters/${characterId}/loadout`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  characterBuildKnowledge: (characterId: number) =>
+    request<CharacterBuildKnowledge>(`/api/characters/${characterId}/build-knowledge`),
+  simulateCharacterLoadout: (characterId: number, body: CharacterBuildLoadout) =>
+    request<LoadoutSimulation>(`/api/characters/${characterId}/loadout/simulate`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  characterActionPlan: (characterId: number, budget?: number) =>
+    request<CharacterActionPlan>(
+      `/api/characters/${characterId}/action-plan${budget !== undefined ? `?budget=${budget}` : ''}`,
+    ),
+  persistCharacterActionPlan: (characterId: number, purchases: CharacterActionPlan['purchases']) =>
+    request<{ ids: number[] }>(`/api/characters/${characterId}/action-plan/persist`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmed: true, purchases }),
+    }),
+  shoppingPlan: (characterId: number) =>
+    request<{ items: ShoppingPlanItem[] }>(`/api/characters/${characterId}/shopping-plan`),
+  updateShoppingPlanItem: (
+    id: number,
+    body: {
+      status: ShoppingPlanItem['status'];
+      note?: string;
+      listingId?: string;
+      itemText?: string;
+      price?: number;
+      tradeUrl?: string;
+      scoreDelta?: number;
+    },
+  ) => request<{ ok: true }>(`/api/shopping-plan/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  equipShoppingPlanItem: (id: number, createSaleDraft = true) =>
+    request<{
+      purchaseId: number;
+      scoreBefore: number;
+      scoreAfter: number;
+      scoreDelta: number;
+      budgetRemaining: number;
+      saleDraftCreated: boolean;
+    }>(`/api/shopping-plan/${id}/equip`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmed: true, createSaleDraft }),
+    }),
+  purchaseHistory: (characterId: number) => request<PurchaseHistory>(`/api/characters/${characterId}/purchase-history`),
+  characterEvolution: (characterId: number) => request<CharacterEvolution>(`/api/characters/${characterId}/evolution`),
+  netUpgradeCosts: (characterId: number) =>
+    request<NetUpgradeCosts>(`/api/characters/${characterId}/net-upgrade-costs`),
+  reversePurchase: (id: number, reason: string) =>
+    request<{ ok: true; refunded: number }>(`/api/purchases/${id}/reverse`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmed: true, reason }),
+    }),
+  replacementSales: (characterId: number) =>
+    request<{ drafts: ReplacementSaleDraft[] }>(`/api/characters/${characterId}/replacement-sales`),
+  listReplacementSale: (
+    id: number,
+    body: { price: number; currency: 'exalted' | 'divine'; league: string; notes?: string },
+  ) => request<{ saleId: number }>(`/api/replacement-sales/${id}/list`, { method: 'POST', body: JSON.stringify(body) }),
+  marketUpgradeCandidates: (characterId: number, slot: string) =>
+    request<MarketUpgradeCandidates>(`/api/characters/${characterId}/market-candidates/${encodeURIComponent(slot)}`),
+  monitorShoppingItem: (id: number) =>
+    request<{
+      checkedAt: string;
+      events: Array<{ type: string; message: string }>;
+      bestCandidate: unknown;
+      dataSource: string;
+      sampleSize: number;
+      warning: string;
+    }>(`/api/shopping-plan/${id}/monitor`, { method: 'POST' }),
+  characterAlerts: (characterId: number) =>
+    request<{ alerts: CharacterAlert[] }>(`/api/characters/${characterId}/alerts`),
+  readAlert: (id: number) => request<{ ok: true }>(`/api/alerts/${id}/read`, { method: 'PUT', body: '{}' }),
+  calibration: (characterId: number) =>
+    request<RecommendationCalibration>(`/api/characters/${characterId}/calibration`),
+  reconcileCharacter: (characterId: number, connectionId: number, confirmed = false) =>
+    request<ReconciliationResult>(`/api/characters/${characterId}/reconcile`, {
+      method: 'POST',
+      body: JSON.stringify({ connectionId, confirmed }),
+    }),
+  filteredEvolution: (characterId: number, filters: { patch?: string; from?: string; to?: string }) =>
+    request<CharacterEvolution>(
+      `/api/characters/${characterId}/evolution-filtered?${new URLSearchParams(Object.entries(filters).filter(([, value]) => value) as Array<[string, string]>).toString()}`,
+    ),
+  evolutionCsvUrl: (characterId: number, filters: { patch?: string; from?: string; to?: string }) =>
+    `${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')}/api/characters/${characterId}/evolution.csv?${new URLSearchParams(Object.entries(filters).filter(([, value]) => value) as Array<[string, string]>).toString()}`,
+  executeGeminiTool: (body: {
+    characterId: number;
+    action: 'inspect_slot' | 'search_upgrade' | 'view_shopping_plan';
+    slot?: string;
+  }) =>
+    request<{ action: string; result: unknown; mutated: boolean }>('/api/gemini/tools/execute', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  recommendationFeedback: (body: {
+    checkId?: number;
+    characterId?: number;
+    verdict: 'useful' | 'incorrect' | 'bought' | 'sold' | 'no-results' | 'wrong-price';
+    note?: string;
+    outcome?: Record<string, unknown>;
+  }) => request<{ id: number }>('/api/recommendation-feedback', { method: 'POST', body: JSON.stringify(body) }),
+  sales: () => request<{ sales: Array<Record<string, unknown>> }>('/api/sales'),
+  saleAdvice: () =>
+    request<{
+      advice: Array<{
+        saleId: number;
+        action: 'hold' | 'review' | 'reprice';
+        suggestedPrice: number | null;
+        ageDays: number;
+        confidence: string;
+        reasons: string[];
+      }>;
+      basis: string;
+    }>('/api/sales/advice'),
+  createSale: (body: {
+    checkId?: number;
+    itemName: string;
+    league: string;
+    listedPrice: number;
+    currency: 'exalted' | 'divine';
+    notes?: string;
+  }) => request<{ id: number }>('/api/sales', { method: 'POST', body: JSON.stringify(body) }),
+  updateSale: (
+    id: number,
+    body: { status?: 'listed' | 'sold' | 'withdrawn'; price?: number; finalPrice?: number; notes?: string },
+  ) => request<{ ok: true }>(`/api/sales/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  compareUpgradeCandidates: (body: {
+    equipment: EquipmentSlotInput[];
+    candidates: UpgradeCandidateInput[];
+    selectedBuildProfileId?: string;
+  }) =>
+    request<{ candidates: RankedUpgradeCandidate[] }>('/api/build-doctor/compare-candidates', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  planUpgrades: (body: {
+    equipment: EquipmentSlotInput[];
+    candidates: UpgradeCandidateInput[];
+    budget: number;
+    selectedBuildProfileId?: string;
+  }) => request<UpgradeBudgetPlan>('/api/build-doctor/upgrade-plan', { method: 'POST', body: JSON.stringify(body) }),
+  characters: () => request<{ characters: CharacterSummary[] }>('/api/characters'),
+  character: (id: number) => request<CharacterDetail>(`/api/characters/${id}`),
+  createCharacter: (body: CharacterInput) =>
+    request<{ character: CharacterSummary }>('/api/characters', { method: 'POST', body: JSON.stringify(body) }),
+  updateCharacter: (id: number, body: CharacterInput) =>
+    request<{ character: CharacterSummary }>(`/api/characters/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  saveCharacterEquipment: (id: number, equipment: EquipmentSlotInput[]) =>
+    request<{ equipment: EquipmentSlotInput[] }>(`/api/characters/${id}/equipment`, {
+      method: 'PUT',
+      body: JSON.stringify({ equipment }),
+    }),
+  deleteCharacter: (id: number) => request<void>(`/api/characters/${id}`, { method: 'DELETE' }),
+  craftingState: (body: { text: string; league?: string; patch?: string; goal?: CraftGoal; estimatedValue?: number }) =>
+    request<{ state: CraftingItemState; legalActions: ActionEvaluation[]; currencies: CraftingCurrencyDef[] }>(
+      '/api/crafting/state',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  craftingApply: (body: { state: CraftingItemState; currencyId: string }) =>
+    request<{ state: CraftingItemState; evaluation: ActionEvaluation; legalActions: ActionEvaluation[] }>(
+      '/api/crafting/apply',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  craftingCompare: (body: { state: CraftingItemState; sellValue?: number; buyPrice?: number }) =>
+    request<CraftComparison>('/api/crafting/compare', { method: 'POST', body: JSON.stringify(body) }),
+  craftingHistory: (characterId?: number) =>
+    request<{ history: CraftingHistoryEntry[] }>(
+      `/api/crafting/history${characterId ? `?characterId=${characterId}` : ''}`,
+    ),
+  confirmCraftingAction: (body: {
+    characterId?: number;
+    action: string;
+    before: CraftingItemState;
+    after: CraftingItemState;
+    valueBefore?: number;
+    valueAfter?: number;
+  }) =>
+    request<{ id: number; gainLoss: number | null }>('/api/crafting/history', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  marketHistory: (baseType: string, league: string) =>
+    request<MarketHistoryResult>(`/api/market-history?${new URLSearchParams({ baseType, league })}`),
+  patchVersions: () => request<{ versions: CatalogVersion[] }>('/api/admin/patch/versions'),
+  stagePatch: (body: { patch: string; dataVersion: string; source: string; modifiers: unknown[] }) =>
+    request<{ version: CatalogVersion }>('/api/admin/patch/stage', { method: 'POST', body: JSON.stringify(body) }),
+  activatePatch: (id: number) =>
+    request<{ version: CatalogVersion }>(`/api/admin/patch/${id}/activate`, { method: 'POST' }),
+  rollbackPatch: (id: number) =>
+    request<{ version: CatalogVersion }>(`/api/admin/patch/${id}/rollback`, { method: 'POST' }),
   poeOAuthStatus: () => request<PoeOAuthStatus>('/api/poe/oauth/status'),
-  poeOAuthStart: () => request<{url:string}>('/api/poe/oauth/start'),
-  poeCharacters: (connectionId:number) => request<{characters:PoeRemoteCharacter[]}>(`/api/poe/characters/${connectionId}`),
-  importPoeCharacter: (connectionId:number,name:string) => request<{character:CharacterSummary;importedEquipment:number}>(`/api/poe/characters/${connectionId}/import`,{method:'POST',body:JSON.stringify({name})}),
-  publicCharacterProfile:(characterId:number)=>request<{profile:PublicCharacterProfile|null;diagnostics:ProfileDiagnostic[];catalogs:ProfileCatalogStatus}>(`/api/characters/${characterId}/public-profile`),
-  importPoeNinjaProfile:(characterId:number,url:string)=>request<{profile:PublicCharacterProfile;diagnostics:ProfileDiagnostic[]}>(`/api/characters/${characterId}/poe-ninja/import`,{method:'POST',body:JSON.stringify({url})}),
-  publicProfileHistory:(characterId:number)=>request<{snapshots:PublicProfileSnapshot[]}>(`/api/characters/${characterId}/public-profile/history`),
-  comparePublicProfiles:(characterId:number,before:number,after:number)=>request<{comparison:PublicProfileComparison}>(`/api/characters/${characterId}/public-profile/compare?${new URLSearchParams({before:String(before),after:String(after)})}`),
+  poeOAuthStart: () => request<{ url: string }>('/api/poe/oauth/start'),
+  poeCharacters: (connectionId: number) =>
+    request<{ characters: PoeRemoteCharacter[] }>(`/api/poe/characters/${connectionId}`),
+  importPoeCharacter: (connectionId: number, name: string) =>
+    request<{ character: CharacterSummary; importedEquipment: number }>(`/api/poe/characters/${connectionId}/import`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+  publicCharacterProfile: (characterId: number) =>
+    request<{
+      profile: PublicCharacterProfile | null;
+      diagnostics: ProfileDiagnostic[];
+      catalogs: ProfileCatalogStatus;
+    }>(`/api/characters/${characterId}/public-profile`),
+  importPoeNinjaProfile: (characterId: number, url: string) =>
+    request<{ profile: PublicCharacterProfile; diagnostics: ProfileDiagnostic[] }>(
+      `/api/characters/${characterId}/poe-ninja/import`,
+      { method: 'POST', body: JSON.stringify({ url }) },
+    ),
+  publicProfileHistory: (characterId: number) =>
+    request<{ snapshots: PublicProfileSnapshot[] }>(`/api/characters/${characterId}/public-profile/history`),
+  comparePublicProfiles: (characterId: number, before: number, after: number) =>
+    request<{ comparison: PublicProfileComparison }>(
+      `/api/characters/${characterId}/public-profile/compare?${new URLSearchParams({ before: String(before), after: String(after) })}`,
+    ),
 };

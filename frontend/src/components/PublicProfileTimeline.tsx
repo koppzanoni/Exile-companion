@@ -1,6 +1,70 @@
-import {ArrowRight,History,LoaderCircle} from 'lucide-react';
-import {useEffect,useState} from 'react';
-import {api} from '../api';
-import type {PublicProfileComparison,PublicProfileSnapshot} from '../types';
+import { ArrowRight, History, LoaderCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { api } from '../api';
+import type { PublicProfileComparison, PublicProfileSnapshot } from '../types';
 
-export function PublicProfileTimeline({characterId,refreshKey}:{characterId:number;refreshKey:string}){const[rows,setRows]=useState<PublicProfileSnapshot[]>([]),[comparison,setComparison]=useState<PublicProfileComparison|null>(null),[loading,setLoading]=useState(false);useEffect(()=>{api.publicProfileHistory(characterId).then(result=>setRows(result.snapshots||[])).catch(()=>setRows([]));},[characterId,refreshKey]);async function compare(){if(rows.length<2)return;setLoading(true);try{setComparison((await api.comparePublicProfiles(characterId,rows[1].id,rows[0].id)).comparison);}finally{setLoading(false)}}return <section className="profile-detail-panel" aria-labelledby="profile-history-heading"><h3 id="profile-history-heading"><History/> Profile timeline</h3>{rows.length===0?<p>No immutable public snapshots yet.</p>:<div className="profile-timeline">{rows.slice(0,8).map(row=><span key={row.id}><b>{new Date(row.importedAt).toLocaleString()}</b><small>{row.treeVersion}</small></span>)}</div>}{rows.length>1&&<button className="secondary-button" type="button" disabled={loading} onClick={compare}>{loading?<LoaderCircle className="spin"/>:<ArrowRight/>} Compare latest snapshots</button>}{comparison&&<div className="profile-comparison" role="status"><strong>{comparison.stats.length} stat changes · {comparison.passives.delta>=0?'+':''}{comparison.passives.delta} passives</strong>{comparison.stats.slice(0,8).map(stat=><span key={stat.key}>{stat.key}: {stat.before} <ArrowRight/> {stat.after} <b className={stat.delta>=0?'positive':'negative'}>{stat.delta>=0?'+':''}{stat.delta}</b></span>)}<small>Skills: +{comparison.skills.added.join(', ')||'none'} / −{comparison.skills.removed.join(', ')||'none'} · Quests added: {comparison.quests.added.length}</small></div>}</section>}
+export function PublicProfileTimeline({ characterId, refreshKey }: { characterId: number; refreshKey: string }) {
+  const [rows, setRows] = useState<PublicProfileSnapshot[]>([]),
+    [comparison, setComparison] = useState<PublicProfileComparison | null>(null),
+    [loading, setLoading] = useState(false);
+  useEffect(() => {
+    api
+      .publicProfileHistory(characterId)
+      .then((result) => setRows(result.snapshots || []))
+      .catch(() => setRows([]));
+  }, [characterId, refreshKey]);
+  async function compare() {
+    if (rows.length < 2) return;
+    setLoading(true);
+    try {
+      setComparison((await api.comparePublicProfiles(characterId, rows[1].id, rows[0].id)).comparison);
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <section className="profile-detail-panel" aria-labelledby="profile-history-heading">
+      <h3 id="profile-history-heading">
+        <History /> Profile timeline
+      </h3>
+      {rows.length === 0 ? (
+        <p>No immutable public snapshots yet.</p>
+      ) : (
+        <div className="profile-timeline">
+          {rows.slice(0, 8).map((row) => (
+            <span key={row.id}>
+              <b>{new Date(row.importedAt).toLocaleString()}</b>
+              <small>{row.treeVersion}</small>
+            </span>
+          ))}
+        </div>
+      )}
+      {rows.length > 1 && (
+        <button className="secondary-button" type="button" disabled={loading} onClick={compare}>
+          {loading ? <LoaderCircle className="spin" /> : <ArrowRight />} Compare latest snapshots
+        </button>
+      )}
+      {comparison && (
+        <div className="profile-comparison" role="status">
+          <strong>
+            {comparison.stats.length} stat changes · {comparison.passives.delta >= 0 ? '+' : ''}
+            {comparison.passives.delta} passives
+          </strong>
+          {comparison.stats.slice(0, 8).map((stat) => (
+            <span key={stat.key}>
+              {stat.key}: {stat.before} <ArrowRight /> {stat.after}{' '}
+              <b className={stat.delta >= 0 ? 'positive' : 'negative'}>
+                {stat.delta >= 0 ? '+' : ''}
+                {stat.delta}
+              </b>
+            </span>
+          ))}
+          <small>
+            Skills: +{comparison.skills.added.join(', ') || 'none'} / −{comparison.skills.removed.join(', ') || 'none'}{' '}
+            · Quests added: {comparison.quests.added.length}
+          </small>
+        </div>
+      )}
+    </section>
+  );
+}

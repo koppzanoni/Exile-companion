@@ -1,4 +1,5 @@
-export type DataSource = 'live' | 'relaxed-live' | 'insufficient-live' | 'similarity-fallback' | 'cache' | 'manual' | 'none';
+export type DataSource =
+  'live' | 'relaxed-live' | 'insufficient-live' | 'similarity-fallback' | 'cache' | 'manual' | 'none';
 export const isLiveVerifiedSource = (source: DataSource) => source === 'live' || source === 'relaxed-live';
 export type Rarity = 'normal' | 'magic' | 'rare' | 'unique' | 'unknown';
 
@@ -66,10 +67,42 @@ export interface ItemStats {
   parsedLines?: ParsedLineDebug[];
 }
 
-export type ItemCategory = 'body-armour' | 'helmet' | 'gloves' | 'boots' | 'shield' | 'focus' | 'quiver' | 'ring' | 'amulet' | 'belt' | 'bow' | 'crossbow' | 'one-handed-melee' | 'two-handed-melee' | 'staff' | 'quarterstaff' | 'wand' | 'sceptre' | 'other';
-export interface ItemCategoryInfo { key: ItemCategory; label: string; priorities: string[]; }
-export interface ParsedLineDebug { line: string; fields: string[]; values: Array<string | number | boolean>; }
-export interface CategoryDetection { category: ItemCategoryInfo; reason: string; confidence: number; evidence: string[]; }
+export type ItemCategory =
+  | 'body-armour'
+  | 'helmet'
+  | 'gloves'
+  | 'boots'
+  | 'shield'
+  | 'focus'
+  | 'quiver'
+  | 'ring'
+  | 'amulet'
+  | 'belt'
+  | 'bow'
+  | 'crossbow'
+  | 'one-handed-melee'
+  | 'two-handed-melee'
+  | 'staff'
+  | 'quarterstaff'
+  | 'wand'
+  | 'sceptre'
+  | 'other';
+export interface ItemCategoryInfo {
+  key: ItemCategory;
+  label: string;
+  priorities: string[];
+}
+export interface ParsedLineDebug {
+  line: string;
+  fields: string[];
+  values: Array<string | number | boolean>;
+}
+export interface CategoryDetection {
+  category: ItemCategoryInfo;
+  reason: string;
+  confidence: number;
+  evidence: string[];
+}
 export interface CategoryAnalysis {
   detectedCategory: ItemCategoryInfo;
   detectionReason: string;
@@ -115,7 +148,9 @@ export interface BuildFitProfile {
   conditionalRules?: Array<{ when: string; then: string; weight: number }>;
   spiritTarget?: number;
   attributeRequirements?: Partial<Record<'strength' | 'dexterity' | 'intelligence', number>>;
-  resistanceCaps?: Partial<Record<'fireResistance' | 'coldResistance' | 'lightningResistance' | 'chaosResistance', number>>;
+  resistanceCaps?: Partial<
+    Record<'fireResistance' | 'coldResistance' | 'lightningResistance' | 'chaosResistance', number>
+  >;
   targetContent?: string;
   budget?: number;
   equipmentDependencies?: string[];
@@ -143,7 +178,13 @@ export type DecisionConfidence = 'Low' | 'Medium' | 'High';
 
 export interface CraftingPotential {
   score: number;
-  label: 'Do Not Craft' | 'Low Potential' | 'Maybe Craft' | 'Good Crafting Base' | 'High Potential' | 'Premium Crafting Base';
+  label:
+    | 'Do Not Craft'
+    | 'Low Potential'
+    | 'Maybe Craft'
+    | 'Good Crafting Base'
+    | 'High Potential'
+    | 'Premium Crafting Base';
   confidence: DecisionConfidence;
   recommendation: string;
   reasons: string[];
@@ -152,11 +193,15 @@ export interface CraftingPotential {
   avoidActions: string[];
   suggestedCurrencyUse: string[];
   currencyWarnings: string[];
-  baseQuality: { score:number;label:string;reasons:string[] };
-  rollQuality: { score:number;label:string;strongRolls:string[];weakRolls:string[];missingRolls:string[] };
+  baseQuality: { score: number; label: string; reasons: string[] };
+  rollQuality: { score: number; label: string; strongRolls: string[]; weakRolls: string[]; missingRolls: string[] };
 }
 
-export interface CraftingSettings {craftingRiskTolerance:'Low'|'Medium'|'High';showCurrencyWarnings:boolean;conservativeCraftingRecommendations:boolean;}
+export interface CraftingSettings {
+  craftingRiskTolerance: 'Low' | 'Medium' | 'High';
+  showCurrencyWarnings: boolean;
+  conservativeCraftingRecommendations: boolean;
+}
 
 export interface ItemRecommendation {
   action: ItemAction;
@@ -250,7 +295,26 @@ export interface BuildFit {
 }
 
 export type BuildPriorityLevel = 'required' | 'high' | 'useful';
-export type BuildStat = 'life' | 'mana' | 'energyShield' | 'armour' | 'evasion' | 'movementSpeed' | 'fireResistance' | 'coldResistance' | 'lightningResistance' | 'chaosResistance' | 'strength' | 'dexterity' | 'intelligence' | 'spirit' | 'rarityFind' | 'attacksPerSecond' | 'criticalHitChance' | 'physicalDps' | 'elementalDps';
+export type BuildStat =
+  | 'life'
+  | 'mana'
+  | 'energyShield'
+  | 'armour'
+  | 'evasion'
+  | 'movementSpeed'
+  | 'fireResistance'
+  | 'coldResistance'
+  | 'lightningResistance'
+  | 'chaosResistance'
+  | 'strength'
+  | 'dexterity'
+  | 'intelligence'
+  | 'spirit'
+  | 'rarityFind'
+  | 'attacksPerSecond'
+  | 'criticalHitChance'
+  | 'physicalDps'
+  | 'elementalDps';
 
 export interface BuildPriority {
   stat: BuildStat;
@@ -327,6 +391,28 @@ export interface ItemComparison {
   recommendationImpact: string;
 }
 
-export type ComparisonVerdict = 'Clear Upgrade' | 'Small Upgrade' | 'Sidegrade' | 'Situational Upgrade' | 'Defensive Upgrade' | 'Offensive Upgrade' | 'Downgrade' | 'Not Comparable' | 'Needs Manual Review';
-export interface CharacterTotals { fireResistance?:number;coldResistance?:number;lightningResistance?:number;chaosResistance?:number;strength?:number;dexterity?:number;intelligence?:number;spirit?:number; }
-export interface CharacterImpact { before:Record<string,number>;after:Record<string,number>;warnings:string[]; }
+export type ComparisonVerdict =
+  | 'Clear Upgrade'
+  | 'Small Upgrade'
+  | 'Sidegrade'
+  | 'Situational Upgrade'
+  | 'Defensive Upgrade'
+  | 'Offensive Upgrade'
+  | 'Downgrade'
+  | 'Not Comparable'
+  | 'Needs Manual Review';
+export interface CharacterTotals {
+  fireResistance?: number;
+  coldResistance?: number;
+  lightningResistance?: number;
+  chaosResistance?: number;
+  strength?: number;
+  dexterity?: number;
+  intelligence?: number;
+  spirit?: number;
+}
+export interface CharacterImpact {
+  before: Record<string, number>;
+  after: Record<string, number>;
+  warnings: string[];
+}

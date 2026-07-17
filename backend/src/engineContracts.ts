@@ -1,11 +1,91 @@
-export type ConfidenceLevel='High'|'Medium'|'Low';
-export interface DataProvenance{patch:string;dataVersion:string;source:string;fetchedAt:string;updatedAt:string;confidence:ConfidenceLevel;authority:'official'|'community'|'inferred';deprecated:boolean}
-export interface NormalizedModifier{id:string;text:string;type:'implicit'|'prefix'|'suffix'|'unknown';group?:string;tier?:number;minimumRoll?:number;maximumRoll?:number;actualRoll?:number;rollPercentile?:number;tags:string[];local:boolean;hybrid?:boolean;statKeys?:string[];confidence?:'High'|'Medium'|'Low';crafted:boolean;desecrated:boolean;source:string}
-export interface ItemAnalysisInput{game:'poe2';league:string;patch:string;itemClass:string;baseType:string;rarity:string;itemLevel?:number;requiredLevel?:number;quality:number;corrupted:boolean;identified:boolean;sockets:string[];implicitModifiers:NormalizedModifier[];prefixes:NormalizedModifier[];suffixes:NormalizedModifier[];unknownModifiers:NormalizedModifier[];baseDefences:{armour:number;evasion:number;energyShield:number;deflection:number;runicWard:number}}
-export interface ItemParser{parseClipboard(text:string,context?:{league?:string;patch?:string}):ItemAnalysisInput}
-export interface BuildProfileProvider{get(id:string):Promise<unknown>;list(patch?:string):Promise<unknown[]>;import(url:string):Promise<unknown>}
-export interface CraftState{item:ItemAnalysisInput;openPrefixes:number|null;openSuffixes:number|null;modifierGroups:string[];availableActions:string[];blockedActions:Array<{action:string;reason:string}>;craftGoal?:unknown;estimatedItemValue?:number;estimatedCraftCost?:number}
-export interface CraftingEngine{inspect(item:ItemAnalysisInput):CraftState;plan(state:CraftState,goal:unknown):Promise<unknown>}
-export interface MarketSearchQuery{league:string;patch:string;itemClass:string;baseType?:string;filters:unknown;limit?:number}
-export interface MarketSearchResult{provider:string;fetchedAt:string;listings:unknown[];warning?:string}
-export interface MarketProvider{search(query:MarketSearchQuery):Promise<MarketSearchResult>;getCurrencyRates():Promise<unknown>;getProviderStatus():Promise<{ok:boolean;message?:string}>}
+export type ConfidenceLevel = 'High' | 'Medium' | 'Low';
+export interface DataProvenance {
+  patch: string;
+  dataVersion: string;
+  source: string;
+  fetchedAt: string;
+  updatedAt: string;
+  confidence: ConfidenceLevel;
+  authority: 'official' | 'community' | 'inferred';
+  deprecated: boolean;
+}
+export interface NormalizedModifier {
+  id: string;
+  text: string;
+  type: 'implicit' | 'prefix' | 'suffix' | 'unknown';
+  group?: string;
+  tier?: number;
+  minimumRoll?: number;
+  maximumRoll?: number;
+  actualRoll?: number;
+  rollPercentile?: number;
+  tags: string[];
+  local: boolean;
+  hybrid?: boolean;
+  statKeys?: string[];
+  confidence?: 'High' | 'Medium' | 'Low';
+  crafted: boolean;
+  desecrated: boolean;
+  source: string;
+}
+export interface ItemAnalysisInput {
+  game: 'poe2';
+  league: string;
+  patch: string;
+  itemClass: string;
+  baseType: string;
+  rarity: string;
+  itemLevel?: number;
+  requiredLevel?: number;
+  quality: number;
+  corrupted: boolean;
+  identified: boolean;
+  sockets: string[];
+  implicitModifiers: NormalizedModifier[];
+  prefixes: NormalizedModifier[];
+  suffixes: NormalizedModifier[];
+  unknownModifiers: NormalizedModifier[];
+  baseDefences: { armour: number; evasion: number; energyShield: number; deflection: number; runicWard: number };
+}
+export interface ItemParser {
+  parseClipboard(text: string, context?: { league?: string; patch?: string }): ItemAnalysisInput;
+}
+export interface BuildProfileProvider {
+  get(id: string): Promise<unknown>;
+  list(patch?: string): Promise<unknown[]>;
+  import(url: string): Promise<unknown>;
+}
+export interface CraftState {
+  item: ItemAnalysisInput;
+  openPrefixes: number | null;
+  openSuffixes: number | null;
+  modifierGroups: string[];
+  availableActions: string[];
+  blockedActions: Array<{ action: string; reason: string }>;
+  craftGoal?: unknown;
+  estimatedItemValue?: number;
+  estimatedCraftCost?: number;
+}
+export interface CraftingEngine {
+  inspect(item: ItemAnalysisInput): CraftState;
+  plan(state: CraftState, goal: unknown): Promise<unknown>;
+}
+export interface MarketSearchQuery {
+  league: string;
+  patch: string;
+  itemClass: string;
+  baseType?: string;
+  filters: unknown;
+  limit?: number;
+}
+export interface MarketSearchResult {
+  provider: string;
+  fetchedAt: string;
+  listings: unknown[];
+  warning?: string;
+}
+export interface MarketProvider {
+  search(query: MarketSearchQuery): Promise<MarketSearchResult>;
+  getCurrencyRates(): Promise<unknown>;
+  getProviderStatus(): Promise<{ ok: boolean; message?: string }>;
+}

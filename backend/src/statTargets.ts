@@ -1,4 +1,4 @@
-import type { ItemCategory, ItemStats } from "./types.js";
+import type { ItemCategory, ItemStats } from './types.js';
 
 export function resolveItemLevel(item: ItemStats): number {
   const level = item.requiredLevel || item.itemLevel || 80;
@@ -9,23 +9,20 @@ export function lifeTarget(level: number): number {
   return Math.min(100, 25 + level);
 }
 
-export function defensiveTarget(
-  stat: "armour" | "evasion",
-  slot: ItemCategory,
-): number {
-  return slot === "body-armour" ? 1200 : slot === "shield" ? 700 : 400;
+export function defensiveTarget(stat: 'armour' | 'evasion', slot: ItemCategory): number {
+  return slot === 'body-armour' ? 1200 : slot === 'shield' ? 700 : 400;
 }
 
 export function energyShieldTarget(slot: ItemCategory): number {
-  return slot === "body-armour" ? 500 : 220;
+  return slot === 'body-armour' ? 500 : 220;
 }
 
 export function deflectionTarget(slot: ItemCategory): number {
-  return slot === "body-armour" ? 500 : 220;
+  return slot === 'body-armour' ? 500 : 220;
 }
 
 export function runicWardTarget(slot: ItemCategory): number {
-  return slot === "focus" ? 300 : 150;
+  return slot === 'focus' ? 300 : 150;
 }
 
 export const RESISTANCE_CAP_DEFAULT = 75;
@@ -54,10 +51,6 @@ export const CRITICAL_DAMAGE_TARGET = 30;
 export const BLOCK_CHANCE_TARGET = 35;
 
 export function criticalValue(item: ItemStats): number {
-  const text = (item.customMods || []).join("\n");
-  return Number(
-    text.match(/(\d+)% increased Critical/i)?.[1] ||
-      item.criticalDamageBonus ||
-      0,
-  );
+  const text = (item.customMods || []).join('\n');
+  return Number(text.match(/(\d+)% increased Critical/i)?.[1] || item.criticalDamageBonus || 0);
 }
