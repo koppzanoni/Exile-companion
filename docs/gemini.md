@@ -12,6 +12,14 @@ Copy `.env.example` to `.env`, set `GEMINI_API_KEY` from Google AI Studio, then 
 
 Gemini receives only structured deterministic findings. It cannot set prices, replace market results, invent mods, or override crafting legality. The market engine remains the sole source for market values. Free-tier limits depend on the Google account and can change; a rate limit does not interrupt item analysis.
 
+## Contextual coaches
+
+Build Doctor and item-sale results expose an optional conversational coach. Build conversations receive the computed profile diagnosis, totals, weakest slots, upgrade order and swap-safety alerts. Sale conversations receive the parsed item, deterministic recommendation, market evidence, comparables, liquidity signals and crafting potential.
+
+Chat history is limited to the last eight visible messages and is sent with each request. The application does not currently persist conversations. Responses use a validated JSON schema containing an answer, confidence, facts used, warnings and suggested UI actions. Suggested actions do not execute purchases, listings, equipment changes or crafting operations.
+
+`GEMINI_CHAT_MODEL` can override the model used for conversations while leaving `GEMINI_MODEL` unchanged for the original item explanation.
+
 ## Troubleshooting
 
 If `aiAnalysis.available` is false, the rest of `/api/analyze` is still valid. Check `GEMINI_ENABLED`, the server-only key, model availability in Google AI Studio, and rate limits. Do not add the key to a `VITE_` variable or commit `.env`.
