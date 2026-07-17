@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CharactersPage } from './CharactersPage';
@@ -12,6 +12,9 @@ beforeEach(() => {
     if (url.match(/\/api\/characters\/1$/) && init?.method === 'PUT') return { character };
     if (url.match(/\/api\/characters\/1$/)) return { character, equipment: [{ slot: 'Boots', itemText: '' }], diagnosis: { resistances: { current: { fireResistance: 20 }, missing: { fireResistance: 55 }, cap: 75 } }, history: [{ id: 1, checkId: null, summary: 'Keep: Rune Pace (~15 Exalted)', createdAt: '2026-01-01T00:00:00Z' }] };
     if (url.match(/\/api\/characters\/1\/equipment$/)) return { equipment: [] };
+    if (url.endsWith('/api/characters/1/snapshots')) return {snapshots:[]};
+    if (url.endsWith('/api/characters/1/loadout')) return {loadout:null};
+    if (url.endsWith('/api/characters/1/build-knowledge')) return {analysis:{reservedSpirit:0,remainingSpirit:null,warnings:[]},similar:{sampleSize:0,confidence:'Low',matches:[],limitation:'No local sample.'},provenance:{patch:'unknown',source:'manual',confidence:'Low'}};
     return { characters: [character] };
   } })));
 });
@@ -34,4 +37,6 @@ describe('characters page', () => {
     await user.click(screen.getByRole('button', { name: /Create character/i }));
     expect(await screen.findByText(/Character created/i)).toBeInTheDocument();
   });
+
+  it('loads expensive build data only after the Build tab opens',async()=>{const user=userEvent.setup();render(<CharactersPage/>);await screen.findByText('Frostbolt');const openButton=screen.getAllByRole('button').find(button=>button.closest('article')?.textContent?.includes('Frostbolt'));await user.click(openButton!);await screen.findByText(/Keep: Rune Pace/i);expect(vi.mocked(fetch).mock.calls.some(([url])=>String(url).endsWith('/api/characters/1/snapshots'))).toBe(false);await user.click(screen.getByRole('tab',{name:'Build'}));await waitFor(()=>expect(vi.mocked(fetch).mock.calls.some(([url])=>String(url).endsWith('/api/characters/1/snapshots'))).toBe(true));});
 });

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, ArrowUpRight, BadgeCheck, BrainCircuit, CheckCircle2, Clock3, Download, Gauge, Hammer, History, Layers3, Scale, Sparkles, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { api } from '../api';
-import type { AIAnalysisResult, Analysis, BuildFitAnalysis, CraftingPotential, EvaluationFactor, FourEvaluations, ItemComparison, ItemRecommendation, MainDecision, MarketAnalysis, MarketHistoryResult, OpportunityAnalysis, StatValuation } from '../types';
+import type { AIAnalysisResult, Analysis, BuildFitAnalysis, CraftingPotential, EvaluationFactor, FourEvaluations, ItemComparison, ItemRecommendation, MainDecision, MarketAnalysis, MarketHistoryResult, OffenceResult, OpportunityAnalysis, StatValuation } from '../types';
 import { Currency } from './Currency';
+import { GeminiCoach } from './GeminiCoach';
 
-const sourceLabel = { live: 'Live official results', 'relaxed-live': 'Relaxed-search live results', 'insufficient-live': 'Insufficient live data', cache: 'Cached official results', manual: 'Manual pasted data', none: 'No market data' };
+const sourceLabel = { live: 'Live official results', 'relaxed-live': 'Relaxed-search live results', 'insufficient-live': 'Insufficient live data', 'similarity-fallback': 'Approximated from similar items', cache: 'Cached official results', manual: 'Manual pasted data', none: 'No market data' };
 
 export function ResultPanel({ result, mode = 'Beginner' }: { result: Analysis; mode?: 'Beginner' | 'Advanced' }) {
   const e = result.estimate;
@@ -18,6 +19,8 @@ export function ResultPanel({ result, mode = 'Beginner' }: { result: Analysis; m
   }
   return <section className="results" aria-label="Analysis result">
     {result.beginnerSummary && <div className="beginner-summary card" data-testid="beginner-summary"><Sparkles/><p>{result.beginnerSummary}</p></div>}
+    {result.offenceResult && <DeterministicOffenceCard result={result.offenceResult} equipped={result.equippedOffenceResult}/>}
+    {result.rosterCompatibility&&result.spiritFeasibility&&<section className="card deterministic-offence" data-testid="analysis-foundations"><header><Layers3/><div><span className="eyebrow">VERSIONED BUILD FOUNDATIONS · {result.rosterCompatibility.catalogPatch}</span><h2>{result.rosterCompatibility.recognized?'Class and ascendancy recognized':'Compatibility needs review'}</h2><p>{result.rosterCompatibility.issues.join(' ')||`Catalog ${result.rosterCompatibility.dataVersion} · ${result.rosterCompatibility.status}`}</p></div><span className={`tag coverage-${result.rosterCompatibility.patchCompatibility==='exact'?'complete':'partial'}`}>{result.rosterCompatibility.patchCompatibility}</span></header><div className="market-search-meta"><span><small>SPIRIT / SET</small><b>{result.spiritFeasibility.weaponSet??'Unknown'}</b></span><span><small>AVAILABLE</small><b>{result.spiritFeasibility.availableSpirit??'Unknown'}</b></span><span><small>RESERVED</small><b>{result.spiritFeasibility.reservedSpirit??'Unknown'}</b></span><span><small>ROSTER</small><b>{result.spiritFeasibility.valid===null?'Unknown':result.spiritFeasibility.valid?'Valid':'Broken'}</b></span><span><small>MECHANICS</small><b>{result.ascendancyMechanicCoverage?.length??0}</b></span><span><small>CONFIDENCE</small><b>{result.spiritFeasibility.confidence}</b></span></div>{(result.criticalRegressions?.length||result.spiritFeasibility.missingInputs.length>0)&&<div className="category-warnings">{result.criticalRegressions?.map((line)=><span key={line}><AlertTriangle/>{line}</span>)}{result.spiritFeasibility.missingInputs.map((line)=><span key={line}><AlertTriangle/>Unknown: {line}</span>)}</div>}{result.ascendancyMechanicCoverage&&result.ascendancyMechanicCoverage.length>0&&<details><summary>Ascendancy mechanic coverage</summary>{result.ascendancyMechanicCoverage.map((entry)=><p key={entry.id}><strong>{entry.label} · {entry.status}</strong> — {entry.limitation}</p>)}</details>}{result.ascendancyMechanicModeled===false&&<p className="liquidity-basis">Ascendancy-specific mechanics are not yet modeled for this ascendancy; this is not a verification result.</p>}{result.transitionBundle&&!result.transitionBundle.complete&&<p className="liquidity-basis"><strong>Transition blocked:</strong> {result.transitionBundle.reason} Missing: {result.transitionBundle.missingSignals.join(', ')}.</p>}</section>}
     {result.aiAnalysis?.available && <AIAnalysisCard analysis={result.aiAnalysis.result} model={result.aiAnalysis.model}/>} 
     {result.decision&&result.evaluations&&<MainDecisionCard decision={result.decision} evaluations={result.evaluations}/>}
     {result.recommendation&&<FinalRecommendationCard recommendation={result.recommendation}/>}
@@ -64,6 +67,29 @@ export function ResultPanel({ result, mode = 'Beginner' }: { result: Analysis; m
       </div>
     </>}
     {result.opportunity && <OpportunityCard opportunity={result.opportunity}/>}
+    <GeminiCoach mode="sale" context={{item:result.item,evaluation:result.evaluation,recommendation:result.recommendation,market:{dataSource:result.dataSource,warning:result.warning,estimate:result.estimate,analysis:result.marketAnalysis,comparables:result.comparableListings.slice(0,10)},opportunity:result.opportunity,craftingPotential:result.craftingPotential,league:result.league,statValuation:result.statValuation,offenceResult:result.offenceResult}}/>
+  </section>;
+}
+
+function DeterministicOffenceCard({result,equipped}:{result:OffenceResult;equipped?:OffenceResult}) {
+  const value=(number:number|null)=>number===null?'Withheld':number.toLocaleString(undefined,{maximumFractionDigits:2});
+  return <section className="card deterministic-offence" data-testid="deterministic-offence">
+    <header><Gauge/><div><span className="eyebrow">VERSIONED OFFENCE MODEL · {result.patch}</span><h2>{result.skillName}</h2><p>{result.mechanicCoverage.reason}</p></div><span className={`tag coverage-${result.mechanicCoverage.status}`}>{result.mechanicCoverage.status} · {result.confidence}</span></header>
+    <div className="market-search-meta">
+      <span><small>EXACT DPS</small><b>{result.mechanicCoverage.exactDpsAvailable?'Available':'Withheld'}</b></span>
+      <span><small>BURST</small><b>{value(result.burstDps)}</b></span>
+      <span><small>SUSTAINED</small><b>{value(result.sustainedDps)}</b></span>
+      <span><small>CLEAR COVERAGE</small><b>{result.clearCoverage}</b></span>
+      <span><small>RESOURCE / SECOND</small><b>{value(result.resourceBalance.costPerSecond)}</b></span>
+      <span><small>PATCH</small><b>{result.patchCompatibility}</b></span>
+    </div>
+    {equipped&&<p className="liquidity-basis"><strong>Equipped baseline:</strong> sustained {value(equipped.sustainedDps)}. Both items use the same skill profile and scenario; missing inputs remain withheld.</p>}
+    {(result.breakpointFailures.length>0||result.missingInputs.length>0)&&<div className="category-warnings">
+      {result.breakpointFailures.map(failure=><span key={failure.code}><AlertTriangle/>{failure.message}</span>)}
+      {result.missingInputs.map(input=><span key={input}><AlertTriangle/>Missing: {input}</span>)}
+    </div>}
+    {(result.assumptions.length>0||result.mechanicCoverage.ignored.length>0)&&<details><summary>Assumptions and excluded components</summary>{result.assumptions.map(line=><p key={line}>{line}</p>)}{result.mechanicCoverage.ignored.map(line=><p key={line}>Excluded: {line}</p>)}</details>}
+    {result.sourceEvidence.length>0&&<div className="source-evidence"><strong>Evidence</strong>{result.sourceEvidence.map(source=><a key={`${source.url}-${source.dataVersion}`} href={source.url} target="_blank" rel="noreferrer">{source.label} · {source.dataVersion} · {source.confidence}</a>)}</div>}
   </section>;
 }
 

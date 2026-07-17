@@ -18,6 +18,10 @@ describe('build profile', () => {
     expect(await screen.findByText(/Teach the Companion your build/i)).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText('Ice Shot Deadeye'), { target: { value: 'Glacial Lance' } });
     fireEvent.change(screen.getByLabelText('Build class'), { target: { value: 'Huntress' } });
+    expect(screen.getByRole('option', { name: 'Spirit Walker' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Martial Artist' })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Build class'), { target: { value: 'Monk' } });
+    expect(screen.getByRole('option', { name: 'Martial Artist' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Life \/ Evasion projectile/i }));
     expect(screen.getByLabelText('Maximum Life priority')).toHaveValue('required');
     await user.click(screen.getByRole('button', { name: /Save as active build/i }));
