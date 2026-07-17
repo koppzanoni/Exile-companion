@@ -9,8 +9,19 @@ services:
       FRONTEND_ORIGIN: http://localhost:8080
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-3.1-flash-lite}
       GEMINI_ENABLED: ${GEMINI_ENABLED:-true}
       GEMINI_TIMEOUT_MS: ${GEMINI_TIMEOUT_MS:-12000}
+      GEMINI_DAILY_MESSAGE_LIMIT: ${GEMINI_DAILY_MESSAGE_LIMIT:-100}
+      GEMINI_DAILY_BUDGET_USD: ${GEMINI_DAILY_BUDGET_USD:-0}
+      GEMINI_ESTIMATED_USD_PER_MILLION_TOKENS: ${GEMINI_ESTIMATED_USD_PER_MILLION_TOKENS:-0}
+      APP_ACCESS_TOKEN: ${APP_ACCESS_TOKEN:-}
+      APP_CSRF_TOKEN: ${APP_CSRF_TOKEN:-}
+      WORKER_API_TOKEN: ${WORKER_API_TOKEN:-}
+      API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-180}
+      MARKET_CACHE_TTL_SECONDS: ${MARKET_CACHE_TTL_SECONDS:-120}
+      AUTH_REQUIRED: ${AUTH_REQUIRED:-true}
+      SESSION_HOURS: ${SESSION_HOURS:-168}
     volumes:
       - poe2_data:/app/data
     ports:
@@ -31,6 +42,38 @@ services:
     ports:
       - "8080:80"
 
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["node", "backend/dist/worker.js"]
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      WORKER_API_BASE_URL: http://backend:3001
+      WORKER_API_TOKEN: ${WORKER_API_TOKEN:-}
+      WORKER_POLL_MS: ${WORKER_POLL_MS:-60000}
+
+  backup:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["node", "backend/dist/backupWorker.js"]
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      DATABASE_PATH: /app/data/poe2-analyzer.db
+      BACKUP_DIRECTORY: /app/backups
+      BACKUP_INTERVAL_MS: ${BACKUP_INTERVAL_MS:-86400000}
+      BACKUP_RETENTION_COUNT: ${BACKUP_RETENTION_COUNT:-14}
+    volumes:
+      - poe2_data:/app/data
+      - poe2_backups:/app/backups
+
   backend-test:
     profiles: ["test"]
     build:
@@ -49,3 +92,4 @@ services:
 
 volumes:
   poe2_data:
+  poe2_backups:
