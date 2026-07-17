@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
 import { backupDatabase, restoreDatabase, verifyDatabase } from './databaseMaintenanceCore.js';
 
@@ -15,17 +15,17 @@ describe('database backup and restore', () => {
     roots.push(root);
     const database = path.join(root, 'app.db'),
       backup = path.join(root, 'backups', 'snapshot.db');
-    let db = new DatabaseSync(database);
+    let db = new Database(database);
     db.exec("CREATE TABLE values_table(value TEXT); INSERT INTO values_table VALUES ('before')");
     db.close();
     backupDatabase(database, backup);
-    db = new DatabaseSync(database);
+    db = new Database(database);
     db.exec("UPDATE values_table SET value='after'");
     db.close();
     const restored = restoreDatabase(database, backup);
     expect(restored.safetyBackup && fs.existsSync(restored.safetyBackup)).toBe(true);
     expect(verifyDatabase(database)).toBe('ok');
-    db = new DatabaseSync(database, { readOnly: true });
+    db = new Database(database, { readonly: true });
     expect((db.prepare('SELECT value FROM values_table').get() as { value: string }).value).toBe('before');
     db.close();
   });
@@ -34,12 +34,12 @@ describe('database backup and restore', () => {
     roots.push(root);
     const database = path.join(root, 'app.db'),
       corrupt = path.join(root, 'bad.db');
-    let db = new DatabaseSync(database);
+    let db = new Database(database);
     db.exec("CREATE TABLE safe(value TEXT); INSERT INTO safe VALUES ('kept')");
     db.close();
     fs.writeFileSync(corrupt, 'not sqlite');
     expect(() => restoreDatabase(database, corrupt)).toThrow();
-    db = new DatabaseSync(database, { readOnly: true });
+    db = new Database(database, { readonly: true });
     expect((db.prepare('SELECT value FROM safe').get() as { value: string }).value).toBe('kept');
     db.close();
   });

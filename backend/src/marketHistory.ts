@@ -1,11 +1,11 @@
-import type { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { MarketValuation } from './marketValuationEngine.js';
 import type { MarketDataSource } from './marketPipeline.js';
 
 const VERIFIED_LIVE_SOURCES: MarketDataSource[] = ['live', 'relaxed-live'];
 
 export function recordPriceSnapshot(
-  db: DatabaseSync,
+  db: Database.Database,
   params: {
     baseType: string;
     itemClass: string;
@@ -72,7 +72,12 @@ function confidenceLabel(score: number): 'High' | 'Medium' | 'Low' {
   return score >= 75 ? 'High' : score >= 45 ? 'Medium' : 'Low';
 }
 
-export function getMarketHistory(db: DatabaseSync, baseType: string, league: string, limit = 30): MarketHistoryResult {
+export function getMarketHistory(
+  db: Database.Database,
+  baseType: string,
+  league: string,
+  limit = 30,
+): MarketHistoryResult {
   const rows = db
     .prepare(
       'SELECT id, base_type AS baseType, item_class AS itemClass, league, data_source AS dataSource, estimate_json AS estimateJson, confidence, sample_size AS sampleSize, created_at AS createdAt FROM price_estimates WHERE base_type = ? AND league = ? ORDER BY created_at DESC, id DESC LIMIT ?',

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import { defaultModifierCatalog, type ModifierCatalogEntry } from './modifierCatalog.js';
 import { lookupModifier, invalidateModifierCatalogCache } from './modifierLookup.js';
 
@@ -141,7 +141,7 @@ function rowToVersion(row: any): CatalogVersion {
   };
 }
 
-function getActiveEntries(db: DatabaseSync): ModifierCatalogEntry[] {
+function getActiveEntries(db: Database.Database): ModifierCatalogEntry[] {
   const rows = db.prepare('SELECT modifier_json FROM modifier_definitions WHERE deprecated = 0').all() as Array<{
     modifier_json: string;
   }>;
@@ -157,7 +157,7 @@ function getActiveEntries(db: DatabaseSync): ModifierCatalogEntry[] {
   return parsed.length ? parsed : defaultModifierCatalog;
 }
 
-export function listCatalogVersions(db: DatabaseSync): CatalogVersion[] {
+export function listCatalogVersions(db: Database.Database): CatalogVersion[] {
   const rows = db
     .prepare(
       'SELECT id, dataset, patch, data_version AS dataVersion, source, status, entry_count AS entryCount, regression_json AS regressionJson, compare_json AS compareJson, created_at AS createdAt, activated_at AS activatedAt, deprecated_at AS deprecatedAt FROM catalog_versions ORDER BY created_at DESC',
@@ -167,7 +167,7 @@ export function listCatalogVersions(db: DatabaseSync): CatalogVersion[] {
 }
 
 export function stagePatch(
-  db: DatabaseSync,
+  db: Database.Database,
   params: { patch: string; dataVersion: string; source: string; entries: ModifierCatalogEntry[] },
 ): CatalogVersion {
   const active = getActiveEntries(db);
@@ -207,7 +207,7 @@ export function stagePatch(
   });
 }
 
-export function activatePatch(db: DatabaseSync, versionId: number): CatalogVersion {
+export function activatePatch(db: Database.Database, versionId: number): CatalogVersion {
   const row = db
     .prepare(
       'SELECT id, dataset, patch, data_version AS dataVersion, source, status, entry_count AS entryCount, regression_json AS regressionJson, compare_json AS compareJson, created_at AS createdAt, activated_at AS activatedAt, deprecated_at AS deprecatedAt FROM catalog_versions WHERE id = ?',
@@ -241,7 +241,7 @@ export function activatePatch(db: DatabaseSync, versionId: number): CatalogVersi
   return { ...version, status: 'active', activatedAt: new Date().toISOString() };
 }
 
-export function rollbackToVersion(db: DatabaseSync, versionId: number): CatalogVersion {
+export function rollbackToVersion(db: Database.Database, versionId: number): CatalogVersion {
   const row = db
     .prepare(
       'SELECT id, dataset, patch, data_version AS dataVersion, source, status, entry_count AS entryCount, regression_json AS regressionJson, compare_json AS compareJson, created_at AS createdAt, activated_at AS activatedAt, deprecated_at AS deprecatedAt FROM catalog_versions WHERE id = ?',

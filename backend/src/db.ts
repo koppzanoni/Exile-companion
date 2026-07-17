@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { defaultModifierCatalog } from './modifierCatalog.js';
 import { craftingCurrencies } from './craftingCurrencies.js';
 import { runMigrations } from './migrations.js';
@@ -13,7 +13,7 @@ const MODIFIER_SEED_SOURCE = 'derived';
 
 export function createDatabase(filename = process.env.DATABASE_PATH || path.resolve('data/poe2-analyzer.db')) {
   if (filename !== ':memory:') fs.mkdirSync(path.dirname(filename), { recursive: true });
-  const db = new DatabaseSync(filename);
+  const db = new Database(filename);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   db.exec(`
     CREATE TABLE IF NOT EXISTS checks (
@@ -226,7 +226,7 @@ export function createDatabase(filename = process.env.DATABASE_PATH || path.reso
   return db;
 }
 
-function seedRosterCatalog(db: DatabaseSync) {
+function seedRosterCatalog(db: Database.Database) {
   const validated = validateRosterCatalog(builtInRosterCatalog);
   if (!validated.ok) throw new Error(validated.errors.join(' '));
   db.prepare(
@@ -254,12 +254,12 @@ function seedRosterCatalog(db: DatabaseSync) {
     );
 }
 
-function ensureColumn(db: DatabaseSync, table: string, column: string, definition: string) {
+function ensureColumn(db: Database.Database, table: string, column: string, definition: string) {
   const columns = (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((c) => c.name);
   if (!columns.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
 }
 
-function seedCraftingCurrencies(db: DatabaseSync) {
+function seedCraftingCurrencies(db: Database.Database) {
   const insert = db.prepare(
     'INSERT OR IGNORE INTO crafting_currencies(id, patch, data_version, source, confidence, currency_json) VALUES (?, ?, ?, ?, ?, ?)',
   );
@@ -274,7 +274,7 @@ function seedCraftingCurrencies(db: DatabaseSync) {
     );
 }
 
-function seedInitialCatalogVersion(db: DatabaseSync) {
+function seedInitialCatalogVersion(db: Database.Database) {
   if (db.prepare("SELECT 1 FROM catalog_versions WHERE dataset = 'modifiers' AND status = 'active'").get()) return;
   db.prepare(
     'INSERT OR IGNORE INTO catalog_versions(dataset, patch, data_version, source, status, entry_count, regression_json, compare_json, activated_at) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)',
@@ -290,7 +290,7 @@ function seedInitialCatalogVersion(db: DatabaseSync) {
   );
 }
 
-function seedSkillProfiles(db: DatabaseSync) {
+function seedSkillProfiles(db: Database.Database) {
   const insert = db.prepare(
     'INSERT OR IGNORE INTO skill_profiles(id, patch, data_version, source, confidence, profile_json) VALUES (?, ?, ?, ?, ?, ?)',
   );
@@ -319,7 +319,7 @@ function seedSkillProfiles(db: DatabaseSync) {
     );
 }
 
-function seedModifierCatalog(db: DatabaseSync) {
+function seedModifierCatalog(db: Database.Database) {
   db.prepare(
     `INSERT OR IGNORE INTO data_sources(name, authority, url, updated_at) VALUES ('modifier-catalog-derived', 'inferred', NULL, CURRENT_TIMESTAMP)`,
   ).run();

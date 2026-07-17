@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { SkillMechanicProfile } from './offenceTypes.js';
 
 const source = (label: string, url: string, limitation?: string) => ({
@@ -214,7 +214,7 @@ export function findSkillMechanicProfile(mainSkill: string, patch = '0.5.x') {
   );
 }
 
-export function loadActiveSkillMechanicProfile(db: DatabaseSync, mainSkill: string, patch = '0.5.x') {
+export function loadActiveSkillMechanicProfile(db: Database.Database, mainSkill: string, patch = '0.5.x') {
   const normalized = mainSkill.trim().toLowerCase();
   const active = db
     .prepare(

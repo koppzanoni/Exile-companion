@@ -1,7 +1,7 @@
 import { existsSync, globSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 
 const interval = Math.max(60_000, Number(process.env.BACKUP_INTERVAL_MS || 86_400_000));
 const retention = Math.max(1, Number(process.env.BACKUP_RETENTION_COUNT || 14));
@@ -9,7 +9,7 @@ const backupDir = resolve(process.env.BACKUP_DIRECTORY || 'backups');
 const database = resolve(process.env.DATABASE_PATH || 'data/poe2-analyzer.db');
 function record(status: string, target: string, error: string | null, verified: number) {
   try {
-    const db = new DatabaseSync(database);
+    const db = new Database(database);
     db.prepare('INSERT INTO backup_runs(status,target,error,verified) VALUES (?,?,?,?)').run(
       status,
       target,

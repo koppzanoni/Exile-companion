@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 
 export function verifyDatabase(filename: string) {
-  const db = new DatabaseSync(filename, { readOnly: true });
+  const db = new Database(filename, { readonly: true });
   try {
     const row = db.prepare('PRAGMA integrity_check').get() as { integrity_check: string };
     if (row.integrity_check !== 'ok') throw new Error(`Integrity check failed: ${row.integrity_check}`);
@@ -18,7 +18,7 @@ export function backupDatabase(database: string, target: string) {
   if (!fs.existsSync(source)) throw new Error(`Database not found: ${source}`);
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   if (fs.existsSync(destination)) throw new Error(`Backup already exists: ${destination}`);
-  const db = new DatabaseSync(source);
+  const db = new Database(source);
   try {
     db.exec(`VACUUM INTO '${destination.replaceAll("'", "''")}'`);
   } finally {

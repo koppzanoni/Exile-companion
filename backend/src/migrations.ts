@@ -1,4 +1,4 @@
-import type { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 
 interface Migration {
   version: number;
@@ -146,7 +146,7 @@ const migrations: Migration[] = [
   },
 ];
 
-export function runMigrations(db: DatabaseSync) {
+export function runMigrations(db: Database.Database) {
   db.exec(
     'CREATE TABLE IF NOT EXISTS schema_migrations(version INTEGER PRIMARY KEY,name TEXT NOT NULL,applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);',
   );
@@ -175,7 +175,7 @@ export function runMigrations(db: DatabaseSync) {
   }
   return db.prepare('SELECT version,name,applied_at AS appliedAt FROM schema_migrations ORDER BY version').all();
 }
-export function schemaIntegrity(db: DatabaseSync) {
+export function schemaIntegrity(db: Database.Database) {
   const result = db.prepare('PRAGMA integrity_check').get() as { integrity_check: string };
   return {
     ok: result.integrity_check === 'ok',
