@@ -1,0 +1,21 @@
+import {readFileSync,readdirSync,statSync} from 'node:fs';
+import {dirname,join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+const root=join(dirname(fileURLToPath(import.meta.url)),'..');
+const catalogPath=join(root,'frontend','src','i18n.tsx');
+const catalog=readFileSync(catalogPath,'utf8');
+const englishBlock=catalog.match(/const en=\{([\s\S]*?)\} as const;/)?.[1]||'';
+const portugueseBlock=catalog.match(/const pt:Record<TranslationKey,string>=\{([\s\S]*?)\};/)?.[1]||'';
+const keys=block=>[...block.matchAll(/'([^']+)'\s*:/g)].map(match=>match[1]);
+const enKeys=keys(englishBlock),ptKeys=keys(portugueseBlock);
+const duplicates=list=>list.filter((key,index)=>list.indexOf(key)!==index);
+const problems=[];
+if(duplicates(enKeys).length)problems.push(`duplicate English keys: ${duplicates(enKeys).join(', ')}`);
+if(duplicates(ptKeys).length)problems.push(`duplicate Portuguese keys: ${duplicates(ptKeys).join(', ')}`);
+for(const key of enKeys)if(!ptKeys.includes(key))problems.push(`missing Portuguese key: ${key}`);
+for(const key of ptKeys)if(!enKeys.includes(key))problems.push(`missing English key: ${key}`);
+const files=[];function walk(dir){for(const name of readdirSync(dir)){const path=join(dir,name);if(statSync(path).isDirectory())walk(path);else if(/\.(ts|tsx)$/.test(name)&&path!==catalogPath)files.push(path);}}walk(join(root,'frontend','src'));
+const usage=files.map(path=>readFileSync(path,'utf8')).join('\n');
+for(const key of enKeys)if(!usage.includes(`'${key}'`)&&!usage.includes(`"${key}"`))problems.push(`unused translation key: ${key}`);
+if(problems.length){console.error(problems.join('\n'));process.exit(1);}console.log(`i18n catalogs valid: ${enKeys.length} keys in en and pt-BR`);
