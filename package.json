@@ -1,13 +1,27 @@
 {
   "name": "poe2-orb-analyzer",
   "private": true,
-  "workspaces": ["backend", "frontend"],
+  "type": "module",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "build": "npm run build -w backend && npm run build -w frontend",
-    "test": "npm run test -w backend && npm run test -w frontend"
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "test:e2e": "playwright test",
+    "test:e2e:auth": "playwright test -c playwright.auth.config.ts",
+    "data:sync-tree": "node scripts/sync-poe2-tree.mjs",
+    "lint": "eslint backend/src frontend/src scripts",
+    "i18n:check": "node scripts/check-i18n.mjs"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@playwright/test": "^1.61.1",
+    "concurrently": "^9.1.2",
+    "cross-env": "^10.1.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^6.1.1",
+    "typescript-eslint": "^8.64.0"
   }
 }

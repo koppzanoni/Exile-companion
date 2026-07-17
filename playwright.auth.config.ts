@@ -1,0 +1,3 @@
+import {defineConfig,devices} from '@playwright/test';
+
+export default defineConfig({testDir:'./e2e-auth',timeout:30_000,fullyParallel:false,retries:0,reporter:'list',use:{baseURL:'http://127.0.0.1:5174',trace:'retain-on-failure'},projects:[{name:'chromium-auth',use:{...devices['Desktop Chrome']}}],webServer:[{command:'cross-env PORT=3101 AUTH_REQUIRED=true DATABASE_PATH=./test-results/auth-e2e.db FRONTEND_ORIGIN=http://127.0.0.1:5174 npm run dev -w backend',url:'http://127.0.0.1:3101/api/health',reuseExistingServer:false,timeout:120_000},{command:'cross-env VITE_API_BASE_URL=http://127.0.0.1:3101 npm run dev -w frontend -- --port 5174',url:'http://127.0.0.1:5174',reuseExistingServer:false,timeout:120_000}]});

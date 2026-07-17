@@ -1,0 +1,5 @@
+import {expect,test} from '@playwright/test';
+
+test('creates, opens and removes a character through the primary workflow',async({page})=>{const name=`E2E-${Date.now()}`;await page.goto('/characters');await page.getByLabel('Character name').fill(name);await page.getByRole('button',{name:/Create character/i}).click();await expect(page.getByText(/Character created/i)).toBeVisible();await expect(page.getByLabel('Character name')).toHaveValue(name);await expect(page.getByRole('tab',{name:'Overview'})).toHaveAttribute('aria-selected','true');await page.getByRole('button',{name:`Delete ${name}`}).click();});
+
+test('health, schema and observability endpoints expose safe operational state',async({request})=>{const health=await request.get('http://127.0.0.1:3001/api/health/detailed');expect(health.ok()).toBeTruthy();const body=await health.json();expect(body.database.ok).toBe(true);expect(Array.isArray(body.database.migrations)).toBe(true);const metrics=await request.get('http://127.0.0.1:3001/api/metrics');expect(metrics.ok()).toBeTruthy();});
