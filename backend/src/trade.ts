@@ -144,7 +144,11 @@ function statFilters(item: ItemStats, category: ReturnType<typeof detectItemCate
 }
 
 export function buildTradeUrl(item: ItemStats, league: string) {
-  const query = buildTradeQuery(item);
+  return buildTradeUrlWithOptions(item, league);
+}
+
+export function buildTradeUrlWithOptions(item: ItemStats, league: string, mode: TradeSearchMode = 'exact-base', options: TradeQueryOptions = {}) {
+  const query = buildTradeQuery(item, mode, options);
   const q = Buffer.from(JSON.stringify(query)).toString('base64url');
   return `${BASE}/trade2/search/poe2/${encodeURIComponent(league)}?q=${q}`;
 }
@@ -233,6 +237,19 @@ function propertyNumber(properties: any[], pattern: RegExp) {
 
 function parseLooseStats(text: string): Partial<ItemStats> {
   const find = (re: RegExp) => Number(text.match(re)?.[1]) || undefined;
+  const addedDamage = (element: string): [number | undefined, number | undefined] => {
+    const base = text.match(new RegExp(`${element} Damage:\\s*(\\d+(?:\\.\\d+)?)-(\\d+(?:\\.\\d+)?)`, "i"));
+    if (base) return [Number(base[1]), Number(base[2])];
+    const added = text.match(
+      new RegExp(`Adds (\\d+)(?:\\([^)]*\\))? to (\\d+)(?:\\([^)]*\\))? ${element} Damage`, "i"),
+    );
+    return added ? [Number(added[1]), Number(added[2])] : [undefined, undefined];
+  };
+  const [physicalDamageMin, physicalDamageMax] = addedDamage("Physical");
+  const [fireDamageMin, fireDamageMax] = addedDamage("Fire");
+  const [coldDamageMin, coldDamageMax] = addedDamage("Cold");
+  const [lightningDamageMin, lightningDamageMax] = addedDamage("Lightning");
+  const [chaosDamageMin, chaosDamageMax] = addedDamage("Chaos");
   return {
     life: find(/\+(\d+) to maximum Life/i), mana: find(/\+(\d+) to maximum Mana/i),
     movementSpeed: find(/(\d+)% increased Movement Speed/i),
@@ -240,6 +257,18 @@ function parseLooseStats(text: string): Partial<ItemStats> {
     lightningResistance: find(/\+(\d+)% to Lightning Resistance/i), chaosResistance: find(/\+(\d+)% to Chaos Resistance/i),
     intelligence: find(/\+(\d+) to Intelligence/i), strength: find(/\+(\d+) to Strength/i), dexterity: find(/\+(\d+) to Dexterity/i),
     spirit: find(/\+(\d+) to Spirit/i), rarityFind: find(/(\d+)% increased Rarity of Items found/i),
+    physicalDamageMin, physicalDamageMax, fireDamageMin, fireDamageMax, coldDamageMin, coldDamageMax, lightningDamageMin, lightningDamageMax, chaosDamageMin, chaosDamageMax,
+    attacksPerSecond: find(/Attacks per Second:\s*(\d+(?:\.\d+)?)/i),
+    attackSpeedBonus: find(/(\d+)(?:\([^)]*\))?% increased Attack Speed/i),
+    castSpeed: find(/(\d+)(?:\([^)]*\))?% increased Cast Speed/i),
+    spellDamage: find(/(\d+)(?:\([^)]*\))?% increased Spell Damage/i),
+    criticalHitChance: find(/Critical Hit Chance:\s*(\d+(?:\.\d+)?)%/i),
+    criticalDamageBonus: find(/(\d+)(?:\([^)]*\))?% increased Critical Damage(?:\s+Bonus)?/i),
+    blockChance: find(/(\d+)% Chance to Block/i),
+    increasedBlockChance: find(/(\d+)(?:\([^)]*\))?% increased Block chance/i),
+    armour: find(/Armour:\s*(\d+)/i), evasion: find(/Evasion Rating:\s*(\d+)/i), energyShield: find(/Energy Shield:\s*(\d+)/i),
+    deflection: find(/Deflection:\s*(\d+)/i), runicWard: find(/Runic Ward:\s*(\d+)/i),
+    stunThreshold: find(/\+(\d+) to Stun Threshold/i),
   };
 }
 

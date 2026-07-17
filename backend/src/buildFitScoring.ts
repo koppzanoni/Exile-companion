@@ -1,11 +1,29 @@
 import type { BuildFitProfile, ItemCategory, ItemEvaluation, ItemStats } from './types.js';
+import type { ScoringContext } from './buildScoringContext.js';
+import { scoreResistanceAgainstCap } from './resistanceCapScoring.js';
+import {
+  ATTRIBUTE_TARGET,
+  CRITICAL_DAMAGE_TARGET,
+  RESISTANCE_CAP_DEFAULT,
+  criticalValue,
+  defensiveTarget,
+  deflectionTarget,
+  elementalDpsTarget,
+  energyShieldTarget,
+  flatAddedDamageTarget,
+  lifeTarget,
+  physicalDpsTarget,
+  resolveItemLevel,
+  runicWardTarget,
+  weaponDamageTarget,
+} from './statTargets.js';
 
 export interface BuildFitScoreBreakdown { score:number; fits:string[]; conflicts:string[]; missing:string[]; wasted:string[]; confidence:number; warnings:string[]; }
 
 const weaponCategories:ItemCategory[]=['bow','crossbow','one-handed-melee','two-handed-melee','staff','quarterstaff','wand','sceptre'];
 const offensiveSlots:ItemCategory[]=[...weaponCategories,'quiver','focus','gloves','ring','amulet'];
 
-export function scoreBuildFit(item:ItemStats,evaluation:ItemEvaluation,profile:BuildFitProfile):BuildFitScoreBreakdown {
+export function scoreBuildFit(item:ItemStats,evaluation:ItemEvaluation,profile:BuildFitProfile,context:ScoringContext):BuildFitScoreBreakdown {
   const category=evaluation.categoryAnalysis?.detectedCategory.key||evaluation.category?.key||'other';
   const text=`${item.rawText||''}\n${(item.customMods||[]).join('\n')}`;
   const fits:string[]=[]; const conflicts:string[]=[]; const missing:string[]=[]; const wasted:string[]=[]; const warnings:string[]=[];
@@ -15,17 +33,17 @@ export function scoreBuildFit(item:ItemStats,evaluation:ItemEvaluation,profile:B
   if(isWeapon&&profile.preferredWeaponTypes.length){possible+=12;if(profile.preferredWeaponTypes.includes(category)){earned+=12;fits.push(`Correct weapon base: ${evaluation.categoryAnalysis?.detectedCategory.label||category}`);}else{conflicts.push(`Build prefers ${profile.preferredWeaponTypes.join(' / ')}, not ${category}`);}}
   if(profile.valuableSlots.includes(category)){earned+=2;possible+=2;}
 
-  if(offensiveSlot)scoreGroup(profile.offensiveStats,38,item,text,category,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing);
-  if(!isWeapon)scoreGroup(profile.defensiveStats,34,item,text,category,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing);
-  scoreGroup(profile.attributes,8,item,text,category,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing,false);
-  scoreGroup(profile.utilityStats,12,item,text,category,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing,false);
+  if(offensiveSlot)scoreGroup(profile.offensiveStats,38,item,text,category,context,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing);
+  if(!isWeapon)scoreGroup(profile.defensiveStats,34,item,text,category,context,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing);
+  scoreGroup(profile.attributes,8,item,text,category,context,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing,false);
+  scoreGroup(profile.utilityStats,12,item,text,category,context,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing,false);
 
   const categoryPriority=profile.categoryPriorities[category]||[];
-  if(categoryPriority.length)scoreGroup(categoryPriority,18,item,text,category,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing);
+  if(categoryPriority.length)scoreGroup(categoryPriority,18,item,text,category,context,earnedValue=>earned+=earnedValue,value=>possible+=value,fits,missing);
   possible+=6;earned+=((evaluation.categoryAnalysis?.categoryScore||evaluation.score)/100)*6;
 
   let wastedMatches=0;
-  for(const stat of profile.wastedStats){if(statStrength(stat,item,text,category)>0.15){wasted.push(stat);wastedMatches++;}}
+  for(const stat of profile.wastedStats){if(statStrength(stat,item,text,category,context)>0.15){wasted.push(stat);wastedMatches++;}}
   for(const line of evaluation.categoryAnalysis?.weakOrWastedStats||[]){if(!wasted.some((entry)=>line.toLowerCase().includes(entry.toLowerCase())))wasted.push(line);}
   if(isWeapon&&(item.life||item.fireResistance||item.coldResistance||item.lightningResistance||item.chaosResistance)){wasted.push('Defensive weapon affixes do not improve build damage');}
 
@@ -41,21 +59,23 @@ export function scoreBuildFit(item:ItemStats,evaluation:ItemEvaluation,profile:B
   return{score,fits:unique(fits).slice(0,8),conflicts:unique(conflicts).slice(0,6),missing:unique(missing).slice(0,7),wasted:unique(wasted).slice(0,7),confidence,warnings:unique(warnings)};
 }
 
-function scoreGroup(stats:string[],weight:number,item:ItemStats,text:string,category:ItemCategory,addEarned:(value:number)=>void,addPossible:(value:number)=>void,fits:string[],missing:string[],important=true){
+function scoreGroup(stats:string[],weight:number,item:ItemStats,text:string,category:ItemCategory,context:ScoringContext,addEarned:(value:number)=>void,addPossible:(value:number)=>void,fits:string[],missing:string[],important=true){
   const relevant=stats.filter((stat)=>statRelevantToSlot(stat,category));
   if(!relevant.length)return;
   const per=weight/relevant.length;
   for(const stat of relevant){
-    const strength=statStrength(stat,item,text,category);
+    const strength=statStrength(stat,item,text,category,context);
     addPossible(per);addEarned(per*strength);
     if(strength>=.2)fits.push(`${stat} — ${strength>=.85?'excellent':strength>=.6?'strong':strength>=.35?'moderate':'low'} (${Math.round(strength*100)}% of target)`);
     else if(important)missing.push(stat);
   }
 }
 
-export function statStrength(raw:string,item:ItemStats,text:string,category:ItemCategory='other'):number{
+const NEUTRAL_CONTEXT:ScoringContext={critical:false,damageTags:[],current:{}};
+
+export function statStrength(raw:string,item:ItemStats,text:string,category:ItemCategory='other',context:ScoringContext=NEUTRAL_CONTEXT):number{
   const stat=raw.toLowerCase().replace(/[_-]/g,' ').trim();
-  const level=Math.max(10,Math.min(100,item.requiredLevel||item.itemLevel||80));
+  const level=resolveItemLevel(item);
   const ratio=(value:number,target:number)=>Math.max(0,Math.min(1,value/Math.max(1,target)));
   const number=(pattern:RegExp)=>Number(text.match(pattern)?.[1]||0);
   const average=(min?:number,max?:number)=>min===undefined||max===undefined?0:(min+max)/2;
@@ -66,39 +86,44 @@ export function statStrength(raw:string,item:ItemStats,text:string,category:Item
   const lightningDps=average(item.lightningDamageMin,item.lightningDamageMax)*aps;
   const elementalDps=coldDps+fireDps+lightningDps+average(item.chaosDamageMin,item.chaosDamageMax)*aps;
   const fallback=(pattern:RegExp)=>pattern.test(text)?.35:0;
-  if(stat.includes('weapon damage'))return ratio(physicalDps+elementalDps,Math.max(55,level*5));
-  if(stat.includes('physical damage')){const measured=Math.max(ratio(physicalDps,Math.max(40,level*3.6)),ratio(number(/(\d+)% increased Physical Damage/i),120));return measured||fallback(/Physical Damage/i);}
-  if(stat.includes('added cold')||stat==='cold damage'){const measured=Math.max(ratio(coldDps,Math.max(25,level*1.8)),ratio(number(/Adds \d+(?:\([^)]*\))? to (\d+)(?:\([^)]*\))? Cold Damage/i),level*2.4));return measured||fallback(/Cold Damage/i);}
-  if(stat.includes('added fire')||stat==='fire damage'){const measured=Math.max(ratio(fireDps,Math.max(25,level*1.8)),ratio(number(/Adds \d+(?:\([^)]*\))? to (\d+)(?:\([^)]*\))? Fire Damage/i),level*2.4));return measured||fallback(/Fire Damage/i);}
-  if(stat.includes('added lightning')||stat==='lightning damage'){const measured=Math.max(ratio(lightningDps,Math.max(25,level*1.8)),ratio(number(/Adds \d+(?:\([^)]*\))? to (\d+)(?:\([^)]*\))? Lightning Damage/i),level*2.4));return measured||fallback(/Lightning Damage/i);}
+  if(stat.includes('weapon damage'))return ratio(physicalDps+elementalDps,weaponDamageTarget(level));
+  if(stat.includes('physical damage')){const measured=Math.max(ratio(physicalDps,physicalDpsTarget(level)),ratio(number(/(\d+)% increased Physical Damage/i),120));return measured||fallback(/Physical Damage/i);}
+  if(stat.includes('added cold')||stat==='cold damage'){const measured=Math.max(ratio(coldDps,elementalDpsTarget(level)),ratio(number(/Adds \d+(?:\([^)]*\))? to (\d+)(?:\([^)]*\))? Cold Damage/i),flatAddedDamageTarget(level)));return measured||fallback(/Cold Damage/i);}
+  if(stat.includes('added fire')||stat==='fire damage'){const measured=Math.max(ratio(fireDps,elementalDpsTarget(level)),ratio(number(/Adds \d+(?:\([^)]*\))? to (\d+)(?:\([^)]*\))? Fire Damage/i),flatAddedDamageTarget(level)));return measured||fallback(/Fire Damage/i);}
+  if(stat.includes('added lightning')||stat==='lightning damage'){const measured=Math.max(ratio(lightningDps,elementalDpsTarget(level)),ratio(number(/Adds \d+(?:\([^)]*\))? to (\d+)(?:\([^)]*\))? Lightning Damage/i),flatAddedDamageTarget(level)));return measured||fallback(/Lightning Damage/i);}
   if(stat.includes('projectile damage')){const measured=Math.max(ratio(number(/(\d+)% increased Projectile Damage/i),40),ratio(item.projectileSkillLevels||0,3));return measured||fallback(/Projectile|Bow Damage/i);}
   if(stat.includes('melee damage')){const measured=Math.max(ratio(number(/(\d+)% increased (?:Melee|Damage with.*Melee)/i),40),ratio(item.meleeSkillLevels||0,3));return measured||fallback(/Melee/i);}
   if(stat.includes('spell damage')){const measured=ratio(item.spellDamage||number(/(\d+)% increased Spell Damage/i),85);return measured||fallback(/Spell Damage/i);}
   if(stat.includes('minion damage')){const measured=ratio(number(/(\d+)% increased Minion Damage/i),50);return measured||fallback(/Minions? deal/i);}
   if(stat.includes('minion stats'))return Math.max(ratio(item.minionSkillLevels||0,3),ratio(number(/(\d+)% increased Minion Damage/i),50),fallback(/Minion/i));
-  if(stat.includes('spell stats'))return Math.max(statStrength('spell damage',item,text,category),statStrength('cast speed',item,text,category),ratio(item.spellSkillLevels||0,3));
-  if(stat.includes('attack stats'))return Math.max(statStrength('attack speed',item,text,category),statStrength('accuracy',item,text,category),ratio(physicalDps+elementalDps,Math.max(55,level*5)));
+  if(stat.includes('spell stats'))return Math.max(statStrength('spell damage',item,text,category,context),statStrength('cast speed',item,text,category,context),ratio(item.spellSkillLevels||0,3));
+  if(stat.includes('attack stats'))return Math.max(statStrength('attack speed',item,text,category,context),statStrength('accuracy',item,text,category,context),ratio(physicalDps+elementalDps,weaponDamageTarget(level)));
   if(stat.includes('minion skill'))return Math.max(ratio(item.minionSkillLevels||0,3),fallback(/Minion Skills/i));
   if(stat.includes('skill level'))return Math.max(ratio(Math.max(item.projectileSkillLevels||0,item.meleeSkillLevels||0,item.spellSkillLevels||0,item.minionSkillLevels||0),3),fallback(/level of all .*Skills/i));
   if(stat.includes('attack speed'))return Math.max(ratio(item.attackSpeedBonus||number(/(\d+)% increased Attack Speed/i),20),ratio(Math.max(0,aps-1.2),.65)*.65);
   if(stat.includes('cast speed'))return Math.max(ratio(item.castSpeed||number(/(\d+)% increased Cast Speed/i),20),fallback(/Cast Speed/i));
-  if(stat.includes('critical'))return Math.max(ratio(item.criticalDamageBonus||number(/(\d+)% increased Critical Damage/i),40),ratio(Math.max(0,(item.criticalHitChance||0)-5),4));
+  if(stat.includes('critical'))return context.critical?ratio(criticalValue(item),CRITICAL_DAMAGE_TARGET):0;
   if(stat.includes('accuracy')){const measured=ratio(number(/\+?(\d+) to Accuracy Rating/i),350);return measured||fallback(/Accuracy/i);}
-  if(stat==='life')return ratio(item.life||0,Math.min(100,25+level));
-  const defenceTarget=category==='body-armour'?1200:category==='shield'?700:400;
-  if(stat==='armour'||stat==='defence')return ratio(item.armour||0,defenceTarget);
-  if(stat==='evasion')return ratio(item.evasion||0,defenceTarget);
-  if(stat.includes('energy shield'))return ratio(item.energyShield||0,category==='body-armour'?500:220);
-  if(stat.includes('deflection'))return ratio(item.deflection||0,category==='body-armour'?500:220);
-  if(stat.includes('runic ward'))return ratio(item.runicWard||0,category==='focus'?300:150);
-  if(stat.includes('resistance')){const values=[item.fireResistance||0,item.coldResistance||0,item.lightningResistance||0,item.chaosResistance||0].sort((a,b)=>b-a);return ratio(values.slice(0,3).reduce((sum,value)=>sum+value,0),90)*Math.min(1,values.filter(Boolean).length/2);}
+  if(stat==='life')return ratio(item.life||0,lifeTarget(level));
+  if(stat==='armour'||stat==='defence')return ratio(item.armour||0,defensiveTarget('armour',category));
+  if(stat==='evasion')return ratio(item.evasion||0,defensiveTarget('evasion',category));
+  if(stat.includes('energy shield'))return ratio(item.energyShield||0,energyShieldTarget(category));
+  if(stat.includes('deflection'))return ratio(item.deflection||0,deflectionTarget(category));
+  if(stat.includes('runic ward'))return ratio(item.runicWard||0,runicWardTarget(category));
+  if(stat.includes('resistance')){
+    const resistanceStats:Array<'fireResistance'|'coldResistance'|'lightningResistance'|'chaosResistance'>=['fireResistance','coldResistance','lightningResistance','chaosResistance'];
+    const present=resistanceStats.filter((key)=>item[key]);
+    if(!present.length)return 0;
+    const scores=present.map((key)=>scoreResistanceAgainstCap(item[key]||0,context.caps?.[key]??RESISTANCE_CAP_DEFAULT,context.current[key]||0).score/100);
+    return scores.reduce((sum,value)=>sum+value,0)/scores.length;
+  }
   if(stat.includes('stun threshold')||stat==='stun')return Math.max(ratio(item.stunThreshold||0,300),fallback(/Stun/i));
-  if(stat==='strength')return ratio(item.strength||0,40);
-  if(stat==='dexterity')return ratio(item.dexterity||0,40);
-  if(stat==='intelligence')return ratio(item.intelligence||0,40);
+  if(stat==='strength')return ratio(item.strength||0,ATTRIBUTE_TARGET);
+  if(stat==='dexterity')return ratio(item.dexterity||0,ATTRIBUTE_TARGET);
+  if(stat==='intelligence')return ratio(item.intelligence||0,ATTRIBUTE_TARGET);
   if(stat.includes('movement speed'))return ratio(item.movementSpeed||0,30);
   if(stat==='mana')return ratio(item.mana||0,100);
-  if(stat==='spirit')return ratio(item.spirit||0,40);
+  if(stat==='spirit')return ratio(item.spirit||0,ATTRIBUTE_TARGET);
   if(stat==='leech')return fallback(/Leech/i);
   if(stat==='reload')return Math.max(ratio(number(/(\d+)% increased Reload Speed/i),25),fallback(/Reload/i));
   if(stat==='rarity')return ratio(item.rarityFind||0,30);

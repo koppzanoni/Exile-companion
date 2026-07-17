@@ -7,6 +7,11 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "worker": "tsx src/worker.ts",
+    "backup-worker": "tsx src/backupWorker.ts",
+    "db:backup": "tsx src/databaseMaintenance.ts backup",
+    "db:verify": "tsx src/databaseMaintenance.ts verify",
+    "db:restore": "tsx src/databaseMaintenance.ts restore",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "vitest run && tsx --test src/app.integration.ts"
@@ -25,6 +30,6 @@
     "supertest": "^7.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.10"
   }
 }

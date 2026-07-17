@@ -55,6 +55,13 @@ describe('Build Fit Analysis',()=>{
     expect(strong.fitsBecause.join(' ')).toMatch(/excellent \(100% of target\)/i);
   });
 
+  it('treats an over-cap resistance roll as far less valuable once the character is already near the cap',()=>{
+    const item=mergeItem(parseItemText('Item Class: Body Armours\nRarity: Rare\nIron Heart\nSteel Plate\n--------\nArmour: 1800\n--------\n+120 to maximum Life\n+40% to Fire Resistance\n+38% to Cold Resistance\n+45 to Strength\n+250 to Stun Threshold'),{});
+    const evaluation=evaluateItem(item);const profile=build('armour-life-warrior');
+    const fresh=analyzeBuildFit(item,evaluation,profile,{});
+    const alreadyCapped=analyzeBuildFit(item,evaluation,profile,{fireResistance:75,coldResistance:75});
+    expect(alreadyCapped.score).toBeLessThan(fresh.score);
+  });
   it('only evaluates build priorities that can reasonably appear on the item slot',()=>{
     const boots=analyze('Item Class: Boots\nRarity: Rare\nFleet Hide\nWrapped Boots\n--------\nEvasion Rating: 430\n--------\n+82 to maximum Life\n30% increased Movement Speed\n+35% to Fire Resistance\n+34% to Cold Resistance','ice-shot-deadeye');
     expect(boots.score).toBeGreaterThanOrEqual(65);

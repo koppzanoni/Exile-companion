@@ -1,6 +1,6 @@
 import type { CraftingEngine, CraftState, ItemAnalysisInput } from './engineContracts.js';
 import { craftingCurrencies } from './craftingCurrencies.js';
-import { compareContinueSellBuy, evaluateAction, legalActions, stateFromItem, type ActionEvaluation, type CraftGoal, type CraftingItemState } from './craftingStateMachine.js';
+import { compareContinueSellBuy, evaluateAction, legalActions, MAX_AFFIXES_PER_TYPE, stateFromItem, type ActionEvaluation, type CraftGoal, type CraftingItemState } from './craftingStateMachine.js';
 
 export type { CraftGoal } from './craftingStateMachine.js';
 
@@ -9,7 +9,8 @@ export class Poe2CraftingEngine implements CraftingEngine {
     const known = item.unknownModifiers.length === 0;
     const prefixCount = item.prefixes.length;
     const suffixCount = item.suffixes.length;
-    const state: CraftState = { item, openPrefixes: known ? Math.max(0, 3 - prefixCount) : null, openSuffixes: known ? Math.max(0, 3 - suffixCount) : null, modifierGroups: [...item.prefixes, ...item.suffixes].flatMap((mod) => (mod.group ? [mod.group] : [])), availableActions: [], blockedActions: [] };
+    const rarityCap = MAX_AFFIXES_PER_TYPE[item.rarity as keyof typeof MAX_AFFIXES_PER_TYPE] ?? MAX_AFFIXES_PER_TYPE.normal;
+    const state: CraftState = { item, openPrefixes: known ? Math.max(0, rarityCap - prefixCount) : null, openSuffixes: known ? Math.max(0, rarityCap - suffixCount) : null, modifierGroups: [...item.prefixes, ...item.suffixes].flatMap((mod) => (mod.group ? [mod.group] : [])), availableActions: [], blockedActions: [] };
     for (const evaluation of legalActions(stateFromItem(item))) {
       if (evaluation.legal) state.availableActions.push(evaluation.label);
       else state.blockedActions.push({ action: evaluation.label, reason: evaluation.reasons.join(' ') });
@@ -21,8 +22,8 @@ export class Poe2CraftingEngine implements CraftingEngine {
     const target = goal as CraftGoal;
     const craftState = stateFromItem(state.item, target, target.currentValue);
     const tiers: Array<{ budget: string; currencyIds: string[] }> = [
-      { budget: 'cheap', currencyIds: ['orb-of-augmentation', 'regal-orb'] },
-      { budget: 'intermediate', currencyIds: ['exalted-orb'] },
+      { budget: 'cheap', currencyIds: ['orb-of-augmentation', 'orb-of-alchemy', 'regal-orb'] },
+      { budget: 'intermediate', currencyIds: ['exalted-orb', 'chaos-orb'] },
       { budget: 'expensive', currencyIds: ['orb-of-annulment', 'divine-orb'] },
     ];
     const routes = tiers.map(({ budget, currencyIds }) => routeFor(craftState, currencyIds, budget));
@@ -48,9 +49,12 @@ function outcomesFor(currencyId: string): string[] {
   switch (currency.effect) {
     case 'upgrade-rarity-magic': return ['Changes rarity to Magic'];
     case 'upgrade-rarity-rare': return ['Changes rarity to Rare and adds one random affix'];
+    case 'upgrade-rarity-rare-direct': return ['Changes rarity directly to Rare and adds four random affixes'];
     case 'add-affix': return ['Adds one random affix from an unknown pool'];
     case 'remove-affix': return ['Removes one random existing affix'];
+    case 'remove-and-add-affix': return ['Removes one random existing affix and adds one new random affix in its place'];
     case 'reroll-numeric': return ['Rerolls the numeric values of existing modifiers'];
+    case 'corrupt': return ['Corrupts the item, permanently blocking further currency use. The specific outcome cannot be predicted: it may leave the item otherwise unchanged, reroll it as a new random item of the same rarity, add a corruption-only modifier, or in rare cases destroy the item entirely. This tool never recommends corrupting an item automatically.'];
     default: return [];
   }
 }

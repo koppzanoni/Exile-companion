@@ -67,6 +67,17 @@ describe('runMarketPipeline', () => {
     expect(toLegacyEstimate(result, item, 65)).toBeNull();
   });
 
+  it('falls back to an approximated price from the closest comparables when nothing clears the similarity bar', async () => {
+    const looselySimilar = Array.from({ length: 6 }, (_, i) => payload(`s${i}`, 20 + i, { baseType: 'Reinforced Greaves', armour: 125, life: 35, movementSpeed: 12 }));
+    const provider = providerWithSequence(looselySimilar, looselySimilar, looselySimilar, looselySimilar, looselySimilar);
+    const result = await runMarketPipeline({ item, itemAnalysis, build: genericBuildFitProfile, league: 'Standard', divineRate: 65, provider });
+    expect(result.dataSource).toBe('similarity-fallback');
+    expect(result.usedCount).toBeGreaterThan(0);
+    expect(result.valuation.fairPrice).toBeGreaterThan(0);
+    expect(result.warning).toMatch(/approximated/i);
+    expect(toLegacyEstimate(result, item, 65)).not.toBeNull();
+  });
+
   it('reports discard reasons for listings below the similarity threshold', async () => {
     const mismatched = Array.from({ length: 6 }, (_, i) => payload(`x${i}`, 20 + i, { armour: 5, life: 5, movementSpeed: 0, baseType: 'Other Boots' }));
     const provider = providerWithSequence(mismatched, mismatched, mismatched, mismatched, mismatched);
@@ -90,6 +101,18 @@ describe('manualMarketAnalysis', () => {
     const estimate = toLegacyEstimate(result, item, 65);
     expect(estimate).not.toBeNull();
     expect(estimate!.usedCount).toBe(result.usedCount);
+  });
+
+  it('falls back to an approximated price from the pasted listings when none share the exact base type', () => {
+    const listings: Listing[] = [20, 22, 24].map((price, i) => ({
+      id: String(i), name: 'Reinforced Greaves', baseType: 'Reinforced Greaves', rarity: 'rare', price, currency: 'exalted', exaltedPrice: price,
+      source: 'manual', account: `seller-${i}`, stats: { armour: 125, life: 35, movementSpeed: 12, fireResistance: 28, itemLevel: 78 },
+    }));
+    const result = manualMarketAnalysis(item, listings, 65);
+    expect(result.dataSource).toBe('similarity-fallback');
+    expect(result.usedCount).toBeGreaterThan(0);
+    expect(result.warning).toMatch(/approximated|closest comparable/i);
+    expect(toLegacyEstimate(result, item, 65)).not.toBeNull();
   });
 
   it('does not invent a price with no pasted listings', () => {

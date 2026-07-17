@@ -1,4 +1,4 @@
-export type DataSource = 'live' | 'relaxed-live' | 'insufficient-live' | 'cache' | 'manual' | 'none';
+export type DataSource = 'live' | 'relaxed-live' | 'insufficient-live' | 'similarity-fallback' | 'cache' | 'manual' | 'none';
 export const isLiveVerifiedSource = (source: DataSource) => source === 'live' || source === 'relaxed-live';
 export type Rarity = 'normal' | 'magic' | 'rare' | 'unique' | 'unknown';
 
@@ -94,7 +94,7 @@ export interface BuildFitProfile {
   mainSkill: string;
   level?: number;
   guideUrl?: string;
-  stage: 'campaign' | 'early-maps' | 'endgame';
+  stage: 'campaign' | 'early-maps' | 'established' | 'transition' | 'endgame' | 'aspirational';
   evaluationStyle: 'balanced' | 'campaign-race' | 'hardcore-gauntlet';
   preferredWeaponTypes: ItemCategory[];
   damageTypes: string[];

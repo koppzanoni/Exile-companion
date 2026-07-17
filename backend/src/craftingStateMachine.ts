@@ -40,7 +40,7 @@ export interface HistoryEntry {
   costSpentSoFar: number;
 }
 
-const MAX_AFFIXES = 3;
+export const MAX_AFFIXES_PER_TYPE: Record<'normal' | 'magic' | 'rare' | 'unique', number> = { normal: 0, magic: 1, rare: 3, unique: 3 };
 
 export function stateFromItem(item: ItemAnalysisInput, goal?: CraftGoal, estimatedValue?: number): CraftingItemState {
   return {
@@ -55,7 +55,8 @@ export function stateFromItem(item: ItemAnalysisInput, goal?: CraftGoal, estimat
 function openSlots(state: CraftingItemState) {
   const knownAffixes = state.prefixes.length + state.suffixes.length;
   const identityKnown = state.prefixes.every((m) => m.group) && state.suffixes.every((m) => m.group);
-  return identityKnown ? Math.max(0, MAX_AFFIXES * 2 - state.prefixes.length - state.suffixes.length) : null;
+  const cap = MAX_AFFIXES_PER_TYPE[state.rarity] * 2;
+  return identityKnown ? Math.max(0, cap - state.prefixes.length - state.suffixes.length) : null;
 }
 
 function duplicateGroupWarning(state: CraftingItemState): string | null {
@@ -80,13 +81,14 @@ export function evaluateAction(state: CraftingItemState, currencyId: string): Ac
     if (slots === 0) reasons.push('The item has no open affix slot.');
     if (slots === null) reasons.push('Affix availability is unknown; paste Advanced Item Description data before adding a modifier.');
   }
-  if (currency.effect === 'remove-affix' && state.prefixes.length + state.suffixes.length === 0) reasons.push('There is no affix to remove.');
+  if ((currency.effect === 'remove-affix' || currency.effect === 'remove-and-add-affix') && state.prefixes.length + state.suffixes.length === 0) reasons.push('There is no affix to remove.');
+  if (currency.effect === 'reroll-numeric' && state.prefixes.length + state.suffixes.length === 0) reasons.push('There are no numeric modifiers to reroll.');
   if (state.goal?.minimumItemLevel && (!state.itemLevel || state.itemLevel < state.goal.minimumItemLevel)) reasons.push(`Item Level ${state.itemLevel ?? 'unknown'} does not meet the required ${state.goal.minimumItemLevel}.`);
   const conflict = duplicateGroupWarning(state);
   if (conflict) reasons.push(conflict);
   if (state.goal?.buyPrice !== undefined && state.goal.currentValue !== undefined && state.goal.currentValue >= state.goal.buyPrice) reasons.push('Buying the target outright is no more expensive than the current item value; further investment is not justified.');
 
-  const risk: ActionEvaluation['risk'] = currency.outcomeCertainty === 'guaranteed' ? 'low' : state.rarity === 'rare' && (slots ?? 1) <= 1 ? 'high' : 'medium';
+  const risk: ActionEvaluation['risk'] = currency.effect === 'corrupt' ? 'high' : currency.outcomeCertainty === 'guaranteed' ? 'low' : state.rarity === 'rare' && (slots ?? 1) <= 1 ? 'high' : 'medium';
   const recommendedStop = Boolean(state.goal?.buyPrice !== undefined && state.estimatedValue !== undefined && state.estimatedValue >= state.goal.buyPrice);
   return {
     currencyId: currency.id, label: currency.label, legal: reasons.length === 0, reasons,
@@ -105,15 +107,19 @@ export function applyAction(state: CraftingItemState, currencyId: string): { sta
   if (!evaluation.legal) return { state, evaluation };
   const currency = findCurrency(currencyId)!;
   const next: CraftingItemState = { ...state, prefixes: [...state.prefixes], suffixes: [...state.suffixes], modifierGroups: [...state.modifierGroups], currencySpent: [...state.currencySpent, { currencyId: currency.id, label: currency.label }] };
-  if (currency.effect === 'upgrade-rarity-magic') next.rarity = 'magic';
-  if (currency.effect === 'upgrade-rarity-rare') next.rarity = 'rare';
-  if (currency.effect === 'add-affix') {
-    const placeholder: NormalizedModifier = { id: `unknown:${next.currencySpent.length}`, text: '(newly added affix — specific modifier unknown without an authoritative mod pool)', type: 'unknown', tags: [], local: false, confidence: 'Low', crafted: true, desecrated: false, source: 'crafting-simulation' };
+  const addPlaceholderAffix = () => {
+    const placeholder: NormalizedModifier = { id: `unknown:${next.currencySpent.length}:${next.prefixes.length + next.suffixes.length}`, text: '(newly added affix — specific modifier unknown without an authoritative mod pool)', type: 'unknown', group: `simulated:${next.currencySpent.length}:${next.prefixes.length + next.suffixes.length}`, tags: [], local: false, confidence: 'Low', crafted: true, desecrated: false, source: 'crafting-simulation' };
     if (next.prefixes.length <= next.suffixes.length) next.prefixes.push(placeholder); else next.suffixes.push(placeholder);
-  }
-  if (currency.effect === 'remove-affix') {
+    next.modifierGroups = [...next.modifierGroups, placeholder.group!];
+  };
+  if (currency.effect === 'upgrade-rarity-magic') next.rarity = 'magic';
+  if (currency.effect === 'upgrade-rarity-rare' || currency.effect === 'upgrade-rarity-rare-direct') next.rarity = 'rare';
+  if (currency.effect === 'remove-affix' || currency.effect === 'remove-and-add-affix') {
     if (next.suffixes.length > next.prefixes.length) next.suffixes.pop(); else if (next.prefixes.length) next.prefixes.pop(); else next.suffixes.pop();
   }
+  if (currency.effect === 'add-affix' || currency.effect === 'upgrade-rarity-magic' || currency.effect === 'upgrade-rarity-rare' || currency.effect === 'remove-and-add-affix') addPlaceholderAffix();
+  if (currency.effect === 'upgrade-rarity-rare-direct') for (let i = 0; i < 4; i++) addPlaceholderAffix();
+  if (currency.effect === 'corrupt') next.corrupted = true;
   return { state: next, evaluation };
 }
 
@@ -123,7 +129,7 @@ export function compareContinueSellBuy(state: CraftingItemState, options: { sell
   const { sellValue, buyPrice } = options;
   if (buyPrice === undefined) return { recommendation: 'unknown', reason: 'No verified market price for a ready-made equivalent was provided, so buy-vs-craft cannot be compared.' };
   if (sellValue !== undefined && sellValue >= buyPrice) return { recommendation: 'sell', reason: `Selling the current state (~${sellValue}) covers the ${buyPrice} cost of a ready item; further crafting risk is not justified.` };
-  if (state.estimatedValue !== undefined && state.estimatedValue >= buyPrice) return { recommendation: 'buy-instead', reason: `A ready-made item (~${buyPrice}) is no more expensive than the value already invested (~${state.estimatedValue}); stop crafting.` };
+  if (state.estimatedValue !== undefined && state.estimatedValue >= buyPrice) return { recommendation: 'buy-instead', reason: `A ready-made item (~${buyPrice}) is no more expensive than this item's current estimated value (~${state.estimatedValue}); further crafting risk is not justified.` };
   return { recommendation: 'continue', reason: 'Neither selling the current state nor buying a ready item is clearly cheaper yet, based on the available price evidence.' };
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildTradeQuery, buildTradeUrl, dedupeListings, normalizeOfficialListing, parseTradeUrl } from './trade.js';
+import { buildTradeQuery, buildTradeUrl, dedupeListings, normalizeOfficialListing, parseManualListings, parseTradeUrl } from './trade.js';
+import { scoreSimilarity } from './pricing.js';
 import type { ItemStats } from './types.js';
 
 describe('Trade2 URL parsing', () => {
@@ -88,5 +89,27 @@ describe('Trade2 URL parsing', () => {
 
   it('rejects lookalike hosts', () => {
     expect(() => parseTradeUrl('https://example.com/trade2/search/poe2/Standard')).toThrow(/pathofexile/);
+  });
+
+  it('extracts weapon damage, attack speed and critical stats from a manually pasted listing', () => {
+    const listings = parseManualListings(
+      '48 exalted | Gemini Bow | Adds 58 to 116 Cold Damage, 16% increased Attack Speed, 20% increased Critical Damage, Critical Hit Chance: 7.50%',
+      65,
+    );
+    expect(listings).toHaveLength(1);
+    expect(listings[0].stats).toMatchObject({
+      coldDamageMin: 58,
+      coldDamageMax: 116,
+      attackSpeedBonus: 16,
+      criticalDamageBonus: 20,
+      criticalHitChance: 7.5,
+    });
+  });
+
+  it('gives a manually pasted weapon listing a fair similarity score once its damage is parsed', () => {
+    const target: ItemStats = { itemType: 'Weapon', baseType: 'Gemini Bow', rarity: 'rare', physicalDamageMin: 90, physicalDamageMax: 180, coldDamageMin: 60, coldDamageMax: 120, attacksPerSecond: 1.65, customMods: [] };
+    const [listing] = parseManualListings('50 exalted | Gemini Bow | Adds 62 to 124 Cold Damage', 65);
+    const withDamage = { ...listing, stats: { ...listing.stats, physicalDamageMin: 88, physicalDamageMax: 176, attacksPerSecond: 1.6 } };
+    expect(scoreSimilarity(target, withDamage)).toBeGreaterThan(50);
   });
 });

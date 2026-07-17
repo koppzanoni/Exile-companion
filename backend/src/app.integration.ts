@@ -6,6 +6,7 @@ import { createDatabase, type AppDatabase } from './db.js';
 import { recordPriceSnapshot } from './marketHistory.js';
 import type { MarketValuation } from './marketValuationEngine.js';
 import { defaultModifierCatalog } from './modifierCatalog.js';
+import { builtInRosterCatalog } from './rosterCatalog.js';
 
 function testValuation(overrides: Partial<MarketValuation> = {}): MarketValuation {
   return { quickSell: 10, fairPrice: 12, listingPrice: 14, lower: 9, upper: 16, currency: 'exalted', confidence: 'High', confidenceScore: 80, sampleSize: 5, usedCount: 5, discardedCount: 0, median: 12, trimmedMean: 12, q1: 10, q3: 14, iqr: 4, minimumReliablePrice: 9, centralPrice: 12, maximumLikelyPrice: 16, distinctSellers: 4, medianListingAgeDays: 1, averageSimilarity: 0.9, outliers: [], priceFixSuspects: [], liquidity: 'medium', liquidityBasis: 'test', comparablesUsed: [], comparablesRejected: [], warning: '', explanation: [], ...overrides };
@@ -13,9 +14,16 @@ function testValuation(overrides: Partial<MarketValuation> = {}): MarketValuatio
 
 let db: AppDatabase;
 beforeEach(() => { db = createDatabase(':memory:'); });
-afterEach(() => db.close());
+afterEach(() => { db.close(); delete process.env.ADMIN_EMAILS; });
+
+async function loginAsAdmin(app: ReturnType<typeof createApp>) {
+  process.env.ADMIN_EMAILS = 'admin@example.com';
+  const registered = await request(app).post('/api/auth/register').send({ email: 'admin@example.com', password: 'admin-password-123', displayName: 'Admin' });
+  return { cookie: registered.headers['set-cookie'][0] as string, csrf: registered.body.csrfToken as string };
+}
 
 describe('API persistence', () => {
+  it('exposes evidence-based service status, safe anonymous preferences and conversation lifecycle',async()=>{const app=createApp(db);const services=await request(app).get('/api/service-status');assert.equal(services.status,200);assert.equal(services.body.services.database.status,'online');assert.equal(services.body.services.trade2.status,'unknown');assert.match(services.body.services.trade2.source,/no live query/i);const preferences=await request(app).get('/api/preferences');assert.equal(preferences.status,200);assert.equal(preferences.body.persisted,false);assert.equal(preferences.body.language,'en');const conversation=Number(db.prepare("INSERT INTO gemini_conversations(mode,title) VALUES ('build','Test history')").run().lastInsertRowid);const archived=await request(app).patch(`/api/gemini/conversations/${conversation}`).send({archived:true});assert.equal(archived.status,200);const history=await request(app).get('/api/gemini/conversations');assert.equal(history.body.conversations.length,0);});
   it('normalizes items, validates crafting plans and reports knowledge status',async()=>{const app=createApp(db);const text='Item Class: Boots\nRarity: Rare\nFleet Pace\nWrapped Boots\n--------\nItem Level: 80\n--------\n{ Prefix Modifier "Virile" (Tier: 3) — Life }\n+118(100-119) to maximum Life';const normalized=await request(app).post('/api/item/normalize').send({text,patch:'0.5.4'});assert.equal(normalized.status,200);assert.equal(normalized.body.item.prefixes[0].tier,3);const plan=await request(app).post('/api/crafting/plan').send({text,patch:'0.5.4',goal:{description:'Life and movement speed',minimumItemLevel:75}});assert.equal(plan.status,200);assert.ok(Array.isArray(plan.body.routes));assert.ok(Array.isArray(plan.body.stopConditions));const status=await request(app).get('/api/admin/knowledge-status');assert.equal(status.status,200);assert.equal(typeof status.body.counts.modifiers,'number');assert.ok(status.body.counts.modifiers>0,'the modifier catalog must be seeded into the database, not left empty');assert.ok(status.body.counts.modifierGroups>0);});
   it('creates versioned knowledge, market and equipment tables',()=>{
     const tables=(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{name:string}>).map((row)=>row.name);
@@ -242,7 +250,68 @@ describe('API persistence', () => {
     assert.ok(response.body.alerts.some((a: any) => a.slot === 'Ring 1'), 'must warn before removing the ring the weapon depends on for Dexterity');
     assert.ok(response.body.weakestSlots.length > 0);
     assert.ok(Array.isArray(response.body.recommendedUpgradeOrder));
+
+    const search=await request(app).post('/api/build-doctor/upgrade-search').send({itemText:equipment[2].itemText,league:'Runes of Aldur',tolerance:110,preserveStats:['life','movementSpeed']});
+    assert.equal(search.status,200,JSON.stringify(search.body));
+    assert.match(search.body.url,/pathofexile\.com\/trade2\/search\/poe2/);
+    assert.deepEqual(search.body.protectedStats,['life','movementSpeed']);
+
+    const candidate='Item Class: Boots\nRarity: Rare\nVictory Pace\nStone Greaves\n--------\nArmour: 250\n--------\n+90 to maximum Life\n30% increased Movement Speed\n+30% to Fire Resistance';
+    const simulation=await request(app).post('/api/build-doctor/simulate-swap').send({equipment,slot:'Boots',candidateItemText:candidate});
+    assert.equal(simulation.status,200,JSON.stringify(simulation.body));
+    assert.equal(simulation.body.slot,'Boots');
+    assert.equal(typeof simulation.body.scoreDelta,'number');
+    assert.ok(simulation.body.diagnosis.profile);
   });
+
+  it('keeps Gemini chat optional and returns a safe unavailable state without a server key', async()=>{
+    const app=createApp(db);
+    const response=await request(app).post('/api/gemini/chat').send({mode:'build',message:'What should I upgrade first?',context:{profile:{overallScore:42},weakestSlots:['Boots']}});
+    assert.equal(response.status,200,JSON.stringify(response.body));
+    assert.equal(response.body.available,false);
+    assert.equal(response.body.reason,'gemini_not_configured');
+    assert.ok(response.body.conversationId);
+    const saved=await request(app).get(`/api/gemini/conversations/${response.body.conversationId}`);
+    assert.equal(saved.status,200);
+    assert.equal(saved.body.messages[0].role,'user');
+  });
+
+  it('persists character snapshots, recommendation feedback and a completed sale journal',async()=>{
+    const app=createApp(db);const created=await request(app).post('/api/characters').send({name:'PersistentHero',league:'Standard',className:'Ranger'});const id=created.body.character.id;
+    await request(app).put(`/api/characters/${id}/equipment`).send({equipment:[{slot:'Boots',itemText:'Item Class: Boots\nRarity: Rare\nStep\nStone Greaves\n+40 to maximum Life'}]});
+    const snapshot=await request(app).post(`/api/characters/${id}/snapshots`).send({patch:'0.5'});assert.equal(snapshot.status,201);assert.equal(typeof snapshot.body.snapshot.score,'number');
+    const feedback=await request(app).post('/api/recommendation-feedback').send({characterId:id,verdict:'bought',note:'Useful upgrade'});assert.equal(feedback.status,201);
+    const sale=await request(app).post('/api/sales').send({itemName:'Stone Greaves',league:'Standard',listedPrice:10,currency:'exalted'});assert.equal(sale.status,201);
+    const sold=await request(app).put(`/api/sales/${sale.body.id}`).send({status:'sold',finalPrice:9});assert.equal(sold.status,200);
+    const list=await request(app).get('/api/sales');assert.equal(list.body.sales[0].status,'sold');assert.equal(list.body.sales[0].finalPrice,9);
+  });
+
+  it('persists a versioned loadout and exposes grounded local build knowledge',async()=>{
+    const app=createApp(db);const created=await request(app).post('/api/characters').send({name:'LoadoutHero',league:'Standard',className:'Ranger',ascendancy:'Deadeye'});const id=created.body.character.id;
+    const loadout={patch:'0.3.0',source:'manual',confidence:'High',mainSkill:'Ice Shot',weaponSet:'Bow',availableSpirit:60,skills:[{name:'Ice Shot',supports:['Cold Infusion'],spiritReservation:30}],keyPassives:['Acrobatics']};
+    const saved=await request(app).put(`/api/characters/${id}/loadout`).send(loadout);assert.equal(saved.status,200,JSON.stringify(saved.body));
+    const knowledge=await request(app).get(`/api/characters/${id}/build-knowledge`);assert.equal(knowledge.status,200,JSON.stringify(knowledge.body));assert.equal(knowledge.body.analysis.reservedSpirit,30);assert.ok(knowledge.body.analysis.dependencies.some((entry:any)=>entry.kind==='support'));assert.ok(knowledge.body.similar.sampleSize>0);assert.match(knowledge.body.similar.limitation,/not global/i);assert.equal(knowledge.body.provenance.patch,'0.3.0');
+    const simulation=await request(app).post(`/api/characters/${id}/loadout/simulate`).send({...loadout,skills:[...loadout.skills,{name:'Herald',supports:[],spiritReservation:50}]});assert.equal(simulation.status,200);assert.equal(simulation.body.safe,false);assert.match(simulation.body.newWarnings.join(' '),/Spirit/i);
+    const plan=await request(app).get(`/api/characters/${id}/action-plan`).query({budget:30});assert.equal(plan.status,200,JSON.stringify(plan.body));assert.equal(plan.body.budget,30);assert.ok(Array.isArray(plan.body.purchases));assert.match(plan.body.warning,/not guaranteed/i);
+    const refused=await request(app).post(`/api/characters/${id}/action-plan/persist`).send({purchases:plan.body.purchases});assert.equal(refused.status,400,'persistence must require explicit confirmation');
+    const persisted=await request(app).post(`/api/characters/${id}/action-plan/persist`).send({confirmed:true,purchases:plan.body.purchases});assert.equal(persisted.status,201,JSON.stringify(persisted.body));
+    if(persisted.body.ids.length){const changed=await request(app).put(`/api/shopping-plan/${persisted.body.ids[0]}`).send({status:'candidate',listingId:'listing-1',price:12,scoreDelta:4});assert.equal(changed.status,200);assert.equal((db.prepare('SELECT COUNT(*) count FROM shopping_plan_history').get() as any).count,1);}
+    const tool=await request(app).post('/api/gemini/tools/execute').send({characterId:id,action:'view_shopping_plan'});assert.equal(tool.status,200);assert.equal(tool.body.mutated,false);assert.ok(Array.isArray(tool.body.result));
+  });
+
+  it('equips a confirmed purchase transactionally, updates budget, snapshots progress and drafts the replaced item for sale',async()=>{
+    const app=createApp(db);const created=await request(app).post('/api/characters').send({name:'BuyerHero',league:'Standard',className:'Ranger',budget:50});const id=created.body.character.id;
+    const oldItem='Item Class: Boots\nRarity: Rare\nOld Steps\nWrapped Boots\n--------\n+20 to maximum Life';const newItem='Item Class: Boots\nRarity: Rare\nNew Steps\nWrapped Boots\n--------\n+120 to maximum Life\n+30% to Fire Resistance\n+25% increased Movement Speed';
+    await request(app).put(`/api/characters/${id}/equipment`).send({equipment:[{slot:'Boots',itemText:oldItem}]});
+    const planId=Number(db.prepare("INSERT INTO shopping_plan_items(character_id,slot,reason,priority,suggested_budget,status,listing_id,item_text,price,score_delta) VALUES (?,?,?,?,?,'candidate',?,?,?,?)").run(id,'Boots','Weak boots','High',20,'live-1',newItem,20,5).lastInsertRowid);
+    const refused=await request(app).post(`/api/shopping-plan/${planId}/equip`).send({});assert.equal(refused.status,400);
+    const equipped=await request(app).post(`/api/shopping-plan/${planId}/equip`).send({confirmed:true,createSaleDraft:true});assert.equal(equipped.status,200,JSON.stringify(equipped.body));assert.ok(equipped.body.scoreAfter>=equipped.body.scoreBefore);assert.equal(equipped.body.budgetRemaining,30);assert.equal((db.prepare('SELECT COUNT(*) count FROM purchase_transactions').get() as any).count,1);assert.equal((db.prepare('SELECT COUNT(*) count FROM character_snapshots').get() as any).count,1);assert.equal((db.prepare('SELECT COUNT(*) count FROM replacement_sale_drafts').get() as any).count,1);
+    const history=await request(app).get(`/api/characters/${id}/purchase-history`);assert.equal(history.body.totalSpent,20);assert.equal(history.body.purchases.length,1);const calibration=await request(app).get(`/api/characters/${id}/calibration`);assert.equal(calibration.body.sampleSize,1);assert.equal(calibration.body.bySlot[0].slot,'Boots');
+    const draft=(await request(app).get(`/api/characters/${id}/replacement-sales`)).body.drafts[0];const listed=await request(app).post(`/api/replacement-sales/${draft.id}/list`).send({price:5,currency:'exalted',league:'Standard'});assert.equal(listed.status,201);assert.equal((db.prepare("SELECT COUNT(*) count FROM sale_journal WHERE status='listed'").get() as any).count,1);await request(app).put(`/api/sales/${listed.body.saleId}`).send({status:'sold',finalPrice:5});const net=await request(app).get(`/api/characters/${id}/net-upgrade-costs`);assert.equal(net.body.rows[0].netCost,15);assert.equal(net.body.rows[0].confirmedReturn,5);const evolution=await request(app).get(`/api/characters/${id}/evolution`);assert.ok(evolution.body.snapshots.length>=1);const filtered=await request(app).get(`/api/characters/${id}/evolution-filtered`).query({patch:'unknown'});assert.ok(Array.isArray(filtered.body.snapshots));const csv=await request(app).get(`/api/characters/${id}/evolution.csv`);assert.match(csv.text,/date,patch,score/);const blocked=await request(app).post(`/api/purchases/${equipped.body.purchaseId}/reverse`).send({confirmed:true,reason:'test'});assert.equal(blocked.status,409,'a sold replacement must block reversal');
+    const alertId=Number(db.prepare('INSERT INTO character_alerts(character_id,type,severity,message) VALUES (?,?,?,?)').run(id,'price-changed','info','Price changed').lastInsertRowid);const alerts=await request(app).get(`/api/characters/${id}/alerts`);assert.equal(alerts.body.alerts[0].message,'Price changed');assert.equal((await request(app).put(`/api/alerts/${alertId}/read`).send({})).status,200);
+  });
+
+  it('reverses an unchanged equipped purchase, refunds budget and preserves its audit record',async()=>{const app=createApp(db);const created=await request(app).post('/api/characters').send({name:'RollbackHero',league:'Standard',budget:20});const id=created.body.character.id;const oldItem='Item Class: Boots\nRarity: Rare\nOld\nWrapped Boots\n+10 to maximum Life';const newItem='Item Class: Boots\nRarity: Rare\nNew\nWrapped Boots\n+100 to maximum Life';await request(app).put(`/api/characters/${id}/equipment`).send({equipment:[{slot:'Boots',itemText:oldItem}]});const planId=Number(db.prepare("INSERT INTO shopping_plan_items(character_id,slot,reason,priority,suggested_budget,status,item_text,price) VALUES (?,?,?,?,?,'candidate',?,?)").run(id,'Boots','upgrade','High',10,newItem,10).lastInsertRowid);const equipped=await request(app).post(`/api/shopping-plan/${planId}/equip`).send({confirmed:true,createSaleDraft:true});assert.equal(equipped.status,200);const reversed=await request(app).post(`/api/purchases/${equipped.body.purchaseId}/reverse`).send({confirmed:true,reason:'Bought by mistake'});assert.equal(reversed.status,200,JSON.stringify(reversed.body));assert.equal(reversed.body.refunded,10);const row=db.prepare('SELECT budget FROM characters WHERE id=?').get(id) as any;assert.equal(row.budget,20);const purchase=db.prepare('SELECT reversed_at AS reversedAt,reversal_reason AS reason FROM purchase_transactions WHERE id=?').get(equipped.body.purchaseId) as any;assert.ok(purchase.reversedAt);assert.equal(purchase.reason,'Bought by mistake');assert.equal((db.prepare("SELECT COUNT(*) count FROM replacement_sale_drafts WHERE status='needs-price'").get() as any).count,0);});
 
   it('exposes an opportunity analysis reusing the same item/build/market models', async () => {
     const app = createApp(db);
@@ -324,51 +393,53 @@ describe('API persistence', () => {
     const app=createApp(db);const newItem='Item Class: Boots\nRarity: Rare\nNew Pace\nHunting Shoes\n--------\nEvasion Rating: 420\n--------\nItem Level: 80\n--------\n+88 to maximum Life\n+15% to Cold Resistance\n32% increased Movement Speed';const equipped='Item Class: Boots\nRarity: Rare\nOld Pace\nHunting Shoes\n--------\nEvasion Rating: 220\n--------\nItem Level: 72\n--------\n+60 to maximum Life\n+40% to Cold Resistance\n20% increased Movement Speed';
     const response=await request(app).post('/api/analyze').send({league:'Standard',itemText:newItem,equippedItemText:equipped,characterTotals:{coldResistance:75,dexterity:120},selectedBuildProfileId:'evasion-ranger',manualListings:'20 exalted | Hunting Shoes | 32 movement',save:true});
     assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.comparison.enabled,true);assert.equal(response.body.comparison.comparable,true);assert.equal(response.body.comparison.characterImpact.after.coldResistance,50);assert.match(response.body.comparison.warnings.join(' '),/Cold Resistance/i);
+    assert.equal(response.body.precisionContext.replacementAware,true);assert.equal(response.body.precisionContext.meta.status,'unknown');const coldContribution=response.body.statValuation.contributions.find((c:any)=>c.stat==='coldResistance');assert.equal(coldContribution.wasted,false,'candidate resistance must be valued against totals after removing the equipped item');
     assert.equal(typeof response.body.beginnerSummary,'string');assert.ok(response.body.beginnerSummary.length>0,'a plain-language beginnerSummary must always be present in the analyze response');
     const saved=await request(app).get('/api/checks');assert.equal(saved.status,200);assert.equal(saved.body[0].comparison.verdict,response.body.comparison.verdict);assert.equal(saved.body[0].comparison.characterImpact.after.coldResistance,50);assert.equal(saved.body[0].beginnerSummary,response.body.beginnerSummary);
   });
 
   it('validates, regression-tests and activates a staged modifier patch, and never lets a failing patch replace the active version', async () => {
     const app = createApp(db);
+    const { cookie, csrf } = await loginAsAdmin(app);
 
-    const invalid = await request(app).post('/api/admin/patch/stage').send({ patch: '0.6.0', dataVersion: 'bad-1', source: 'community-test', modifiers: [{ id: 'life' }] });
+    const invalid = await request(app).post('/api/admin/patch/stage').set('Cookie', cookie).set('x-csrf-token', csrf).send({ patch: '0.6.0', dataVersion: 'bad-1', source: 'community-test', modifiers: [{ id: 'life' }] });
     assert.equal(invalid.status, 422, JSON.stringify(invalid.body));
     assert.match(invalid.body.error, /schema validation failed/i);
 
     const failingCandidate = defaultModifierCatalog.filter((entry) => entry.id !== 'life');
-    const staged = await request(app).post('/api/admin/patch/stage').send({ patch: '0.6.0', dataVersion: 'candidate-1', source: 'community-test', modifiers: failingCandidate });
+    const staged = await request(app).post('/api/admin/patch/stage').set('Cookie', cookie).set('x-csrf-token', csrf).send({ patch: '0.6.0', dataVersion: 'candidate-1', source: 'community-test', modifiers: failingCandidate });
     assert.equal(staged.status, 201, JSON.stringify(staged.body));
     assert.equal(staged.body.version.status, 'staged');
     assert.equal(staged.body.version.regression.passed, false, 'removing the life modifier must fail the regression check');
 
-    const rejectedActivation = await request(app).post(`/api/admin/patch/${staged.body.version.id}/activate`);
+    const rejectedActivation = await request(app).post(`/api/admin/patch/${staged.body.version.id}/activate`).set('Cookie', cookie).set('x-csrf-token', csrf);
     assert.equal(rejectedActivation.status, 422, JSON.stringify(rejectedActivation.body));
     assert.match(rejectedActivation.body.error, /regression check/i);
 
-    const versionsAfterFailure = await request(app).get('/api/admin/patch/versions');
+    const versionsAfterFailure = await request(app).get('/api/admin/patch/versions').set('Cookie', cookie);
     const activeAfterFailure = versionsAfterFailure.body.versions.find((v: any) => v.status === 'active');
     assert.ok(activeAfterFailure, 'an active version must always exist');
     assert.notEqual(activeAfterFailure.id, staged.body.version.id, 'a failing patch must never automatically replace the active version');
 
     const goodCandidate = [...defaultModifierCatalog];
-    const goodStaged = await request(app).post('/api/admin/patch/stage').send({ patch: '0.6.0', dataVersion: 'candidate-2', source: 'community-test', modifiers: goodCandidate });
+    const goodStaged = await request(app).post('/api/admin/patch/stage').set('Cookie', cookie).set('x-csrf-token', csrf).send({ patch: '0.6.0', dataVersion: 'candidate-2', source: 'community-test', modifiers: goodCandidate });
     assert.equal(goodStaged.status, 201, JSON.stringify(goodStaged.body));
     assert.equal(goodStaged.body.version.regression.passed, true);
 
-    const activated = await request(app).post(`/api/admin/patch/${goodStaged.body.version.id}/activate`);
+    const activated = await request(app).post(`/api/admin/patch/${goodStaged.body.version.id}/activate`).set('Cookie', cookie).set('x-csrf-token', csrf);
     assert.equal(activated.status, 200, JSON.stringify(activated.body));
     assert.equal(activated.body.version.status, 'active');
 
-    const versionsAfterActivation = await request(app).get('/api/admin/patch/versions');
+    const versionsAfterActivation = await request(app).get('/api/admin/patch/versions').set('Cookie', cookie);
     const nowActive = versionsAfterActivation.body.versions.find((v: any) => v.status === 'active');
     assert.equal(nowActive.id, goodStaged.body.version.id);
     const previouslyActive = versionsAfterActivation.body.versions.find((v: any) => v.id === activeAfterFailure.id);
     assert.equal(previouslyActive.status, 'deprecated', 'the superseded version must be marked deprecated, not deleted, so history is preserved');
 
-    const rolledBack = await request(app).post(`/api/admin/patch/${activeAfterFailure.id}/rollback`);
+    const rolledBack = await request(app).post(`/api/admin/patch/${activeAfterFailure.id}/rollback`).set('Cookie', cookie).set('x-csrf-token', csrf);
     assert.equal(rolledBack.status, 200, JSON.stringify(rolledBack.body));
     assert.equal(rolledBack.body.version.status, 'active');
-    const versionsAfterRollback = await request(app).get('/api/admin/patch/versions');
+    const versionsAfterRollback = await request(app).get('/api/admin/patch/versions').set('Cookie', cookie);
     const afterRollbackActive = versionsAfterRollback.body.versions.find((v: any) => v.status === 'active');
     assert.equal(afterRollbackActive.id, activeAfterFailure.id, 'rollback must restore the previously active version');
   });
@@ -384,5 +455,86 @@ describe('API persistence', () => {
     assert.equal(row.partial, 1);
     const storedFields = JSON.parse(row.fieldsJson);
     assert.equal(storedFields.find((f: any) => f.field === 'mainSkill').needsConfirmation, true);
+  });
+
+  it('returns the same versioned offence contract from Analyzer and Build Doctor without fabricating exact DPS', async () => {
+    const app = createApp(db);
+    const profile = { name: 'Ice Shot Regression', className: 'Ranger', ascendancy: 'Deadeye', mainSkill: 'Ice Shot', stage: 'endgame', defenceStyle: 'life-evasion', priorities: [], requiredMods: [], desiredMods: [] };
+    const saved = await request(app).put('/api/build-profile').send(profile);
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    const bow = 'Item Class: Bows\nRarity: Rare\nCold Branch\nDualstring Bow\n--------\nPhysical Damage: 100-200\nCold Damage: 20-40\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.50';
+    const analyzed = await request(app).post('/api/analyze').send({ league: 'Standard', itemText: bow, item: {}, manualListings: '', patch: '0.5.x' });
+    assert.equal(analyzed.status, 200, JSON.stringify(analyzed.body));
+    assert.equal(analyzed.body.offenceResult.skillName, 'Ice Shot');
+    assert.equal(analyzed.body.offenceResult.exactDpsAvailable, undefined);
+    assert.equal(analyzed.body.exactDpsAvailable, false);
+    assert.ok(analyzed.body.missingInputs.includes('hit chance against the selected target'));
+    assert.ok(analyzed.body.offenceResult.mechanicCoverage.ignored.includes('Secondary shards'));
+    const doctor = await request(app).post('/api/build-doctor').send({ equipment: [{ slot: 'weapon', itemText: bow }], selectedBuildProfileId: saved.body.profile.id, patch: '0.5.x' });
+    assert.equal(doctor.status, 200, JSON.stringify(doctor.body));
+    assert.equal(doctor.body.offenceResult.skillId, analyzed.body.offenceResult.skillId);
+    assert.equal(doctor.body.offenceResult.mechanicCoverage.reason, analyzed.body.offenceResult.mechanicCoverage.reason);
+  });
+
+  it('stages, explicitly activates and rolls back a validated skill catalog', async () => {
+    const app = createApp(db);
+    const { cookie, csrf } = await loginAsAdmin(app);
+    const active = db.prepare("SELECT id FROM catalog_versions WHERE dataset='skills' AND status='active'").get() as { id: number };
+    const seeded = db.prepare("SELECT profile_json AS profileJson FROM skill_profiles WHERE id='ice-shot:20'").get() as { profileJson: string };
+    const candidate = { ...JSON.parse(seeded.profileJson), dataVersion: 'regression-candidate' };
+    const staged = await request(app).post('/api/admin/skills/stage').set('Cookie', cookie).set('x-csrf-token', csrf).send({ patch: '0.5.x', dataVersion: 'regression-candidate', source: 'integration-test', profiles: [candidate] });
+    assert.equal(staged.status, 201, JSON.stringify(staged.body));
+    assert.equal(staged.body.version.status, 'staged');
+    assert.equal((db.prepare('SELECT status FROM catalog_versions WHERE id=?').get(staged.body.version.id) as any).status, 'staged');
+    const activated = await request(app).post(`/api/admin/skills/${staged.body.version.id}/activate`).set('Cookie', cookie).set('x-csrf-token', csrf);
+    assert.equal(activated.status, 200, JSON.stringify(activated.body));
+    assert.equal((db.prepare('SELECT status FROM catalog_versions WHERE id=?').get(staged.body.version.id) as any).status, 'active');
+    const rollback = await request(app).post(`/api/admin/skills/${active.id}/rollback`).set('Cookie', cookie).set('x-csrf-token', csrf);
+    assert.equal(rollback.status, 200, JSON.stringify(rollback.body));
+    assert.equal((db.prepare('SELECT status FROM catalog_versions WHERE id=?').get(active.id) as any).status, 'active');
+  });
+
+  it('stages and explicitly activates a valid roster while rejecting wrong class ownership',async()=>{
+    const app=createApp(db); const {cookie,csrf}=await loginAsAdmin(app); const current=await request(app).get('/api/roster');
+    assert.equal(current.status,200);assert.equal(current.body.catalog.entries.filter((entry:any)=>entry.playable).length,8);
+    const wrong=structuredClone(builtInRosterCatalog);wrong.dataVersion='wrong-owner';const huntress=wrong.entries.find((entry)=>entry.baseClass==='Huntress')!;const druid=wrong.entries.find((entry)=>entry.baseClass==='Druid')!;huntress.ascendancies=huntress.ascendancies.filter((entry)=>entry.name!=='Spirit Walker');druid.ascendancies.push({name:'Spirit Walker',alternate:false});
+    const rejected=await request(app).post('/api/admin/roster/stage').set('Cookie',cookie).set('x-csrf-token',csrf).send(wrong);assert.equal(rejected.status,422);
+    const candidate={...structuredClone(builtInRosterCatalog),dataVersion:'integration-roster',source:'https://example.com/integration-roster'};
+    const staged=await request(app).post('/api/admin/roster/stage').set('Cookie',cookie).set('x-csrf-token',csrf).send(candidate);assert.equal(staged.status,201,JSON.stringify(staged.body));
+    assert.equal((db.prepare('SELECT status FROM catalog_versions WHERE id=?').get(staged.body.version.id) as any).status,'staged');
+    const activated=await request(app).post(`/api/admin/roster/${staged.body.version.id}/activate`).set('Cookie',cookie).set('x-csrf-token',csrf);assert.equal(activated.status,200);
+    const after=await request(app).get('/api/roster');assert.equal(after.body.catalog.dataVersion,'integration-roster');
+  });
+
+  it('returns the same Spirit Walker foundations from Analyzer and Build Doctor',async()=>{
+    const app=createApp(db);const profile={name:'Spirit Walker regression',className:'Huntress',ascendancy:'Spirit Walker',mainSkill:'Unknown Companion Skill',stage:'transition',defenceStyle:'hybrid',priorities:[],requiredMods:[],desiredMods:[]};
+    const saved=await request(app).put('/api/build-profile').send(profile);assert.equal(saved.status,200,JSON.stringify(saved.body));
+    const spiritPlan={weaponSet:2,baseSpirit:100,equipmentSpirit:0,weaponSetSpirit:{1:40,2:0},reservationEfficiencyPercent:0,companionLimit:1,roster:[{id:'unique-beast',kind:'tamed-beast',reservation:60,required:true,unique:true},{id:'persistent-aura',kind:'persistent-skill',reservation:60,required:true}]};
+    const item='Item Class: Amulets\nRarity: Rare\nSafe Test\nSolar Amulet\n--------\n+20 to maximum Life';
+    const analyzed=await request(app).post('/api/analyze').send({league:'Standard',itemText:item,item:{},manualListings:'',patch:'0.5.4b',spiritPlan,nonIdolAugments:2});assert.equal(analyzed.status,200,JSON.stringify(analyzed.body));
+    const doctor=await request(app).post('/api/build-doctor').send({equipment:[{slot:'amulet',itemText:item}],selectedBuildProfileId:saved.body.profile.id,patch:'0.5.4b',spiritPlan,nonIdolAugments:2});assert.equal(doctor.status,200,JSON.stringify(doctor.body));
+    assert.deepEqual(doctor.body.spiritFeasibility,analyzed.body.spiritFeasibility);assert.deepEqual(doctor.body.rosterCompatibility,analyzed.body.rosterCompatibility);
+    assert.equal(analyzed.body.spiritFeasibility.valid,false);assert.equal(analyzed.body.idolatry.resistancePenalty,8);assert.ok(analyzed.body.criticalRegressions.length>0);
+    assert.equal(analyzed.body.ascendancyMechanicModeled,true);
+  });
+  it('flags an ascendancy without a dedicated mechanics package as not modeled instead of a silently empty coverage list',async()=>{
+    const app=createApp(db);
+    const profile={name:'Ritualist regression',className:'Huntress',ascendancy:'Ritualist',mainSkill:'Unknown Skill',stage:'campaign',defenceStyle:'life-armour',priorities:[],requiredMods:[],desiredMods:[]};
+    const saved=await request(app).put('/api/build-profile').send(profile);assert.equal(saved.status,200,JSON.stringify(saved.body));
+    const item='Item Class: Amulets\nRarity: Rare\nSafe Test\nSolar Amulet\n--------\n+20 to maximum Life';
+    const analyzed=await request(app).post('/api/analyze').send({league:'Standard',itemText:item,item:{},manualListings:''});
+    assert.equal(analyzed.status,200,JSON.stringify(analyzed.body));
+    assert.equal(analyzed.body.ascendancyMechanicModeled,false);
+    assert.deepEqual(analyzed.body.ascendancyMechanicCoverage,[]);
+  });
+  it('reports the roster catalog as patch-compatible by default instead of an always-unsupported placeholder patch',async()=>{
+    const app=createApp(db);
+    const item='Item Class: Boots\nRarity: Rare\nSafe Test\nWrapped Boots\n--------\n+60 to maximum Life';
+    const analyzed=await request(app).post('/api/analyze').send({league:'Standard',itemText:item,item:{},manualListings:''});
+    assert.equal(analyzed.status,200,JSON.stringify(analyzed.body));
+    assert.notEqual(analyzed.body.rosterCompatibility.patchCompatibility,'unsupported');
+    const doctor=await request(app).post('/api/build-doctor').send({equipment:[{slot:'boots',itemText:item}]});
+    assert.equal(doctor.status,200,JSON.stringify(doctor.body));
+    assert.notEqual(doctor.body.rosterCompatibility.patchCompatibility,'unsupported');
   });
 });

@@ -15,6 +15,13 @@ describe('equipped item comparison',()=>{
   it('warns about resistance loss',()=>{const result=compareItems(ring({coldResistance:5}),ring({coldResistance:35}));expect(result.warnings.join(' ')).toMatch(/lose 30% Cold Resistance/i);});
   it('warns about attribute loss',()=>{const result=compareItems(ring({dexterity:5}),ring({dexterity:47}));expect(result.warnings.join(' ')).toMatch(/lose 42 Dexterity/i);});
   it('calculates character total impact and cap risk',()=>{const result=compareItems(ring({coldResistance:15,strength:10}),ring({coldResistance:40,strength:35}),{characterTotals:{coldResistance:75,strength:120}});expect(result.characterImpact?.after.coldResistance).toBe(50);expect(result.characterImpact?.after.strength).toBe(95);expect(result.characterImpact?.warnings.join(' ')).toMatch(/break your Cold Resistance cap/i);});
+  it('does not credit a resistance gain toward the defensive dimension once the character is already at the cap',()=>{
+    const candidate=ring({fireResistance:40});const equipped=ring({fireResistance:5});
+    const fresh=compareItems(candidate,equipped);
+    const alreadyCapped=compareItems(candidate,equipped,{characterTotals:{fireResistance:75}});
+    expect(fresh.betterFor).toContain('defence');
+    expect(alreadyCapped.betterFor).not.toContain('defence');
+  });
 });
 
 function base(category:string,extra:Partial<ItemStats>):ItemStats{return{itemType:category,itemClass:category,baseType:category,rarity:'rare',customMods:[],...extra};}

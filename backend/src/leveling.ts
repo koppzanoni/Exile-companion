@@ -1,6 +1,7 @@
 import type { BuildFitProfile } from './types.js';
 
 const BASE = 'https://www.pathofexile.com';
+export const TRADE2_MAX_FETCH_RESULTS = 10;
 
 export type LevelingSlot = 'weapon' | 'body-armour' | 'boots' | 'helmet' | 'gloves' | 'ring' | 'amulet' | 'belt';
 export type ProgressionMilestone = '10' | '20' | '30' | '40' | 'advanced-campaign' | 'early-endgame' | 'endgame';
@@ -89,8 +90,11 @@ export function buildLevelingSearchPlan(profile: BuildFitProfile, level: number,
     belt: { slot: 'belt', label: 'Belt', category: 'accessory.belt', priorities: ['Life', 'Elemental Resistances'] },
   };
   const milestone = milestoneFor(level);
-  const maxSlots = options.maxSlots ?? 3;
-  const order: LevelingSlot[] = options.weakestSlots?.length ? ['weapon', ...options.weakestSlots.filter((s) => s !== 'weapon')] : rankSlotsForMilestone(milestone);
+  const maxSlots = options.maxSlots ?? Object.keys(bySlot).length;
+  const rankedSlots = rankSlotsForMilestone(milestone);
+  const order: LevelingSlot[] = options.weakestSlots?.length
+    ? ['weapon', ...options.weakestSlots.filter((s) => s !== 'weapon'), ...rankedSlots]
+    : rankedSlots;
   const chosen = [...new Set(order)].slice(0, maxSlots).map((slot) => bySlot[slot]).filter(Boolean);
   const budget = Math.max(0.1, Math.round((maxPrice / chosen.length) * 100) / 100);
   return chosen.map((slot) => ({ ...slot, budget, query: levelingQuery(slot.slot, slot.category, level, budget, weapon.attack) }));
@@ -106,26 +110,39 @@ export async function searchLevelingItems(profile: BuildFitProfile, level: numbe
   return results;
 }
 
+async function fetchWithRateLimitRetry(url: string, buildInit: () => RequestInit, attempts = 2): Promise<Response> {
+  let response = await fetch(url, buildInit());
+  for (let attempt = 0; response.status === 429 && attempt < attempts; attempt += 1) {
+    const retryAfterSeconds = Number(response.headers.get('retry-after')) || 1.5;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(5000, Math.max(0, retryAfterSeconds) * 1000)));
+    response = await fetch(url, buildInit());
+  }
+  return response;
+}
+
 async function searchSlot(plan: SearchPlan, league: string, level: number, currency: string) {
-  const fallbackUrl = `${BASE}/trade2/search/poe2/${encodeURIComponent(league)}?q=${Buffer.from(JSON.stringify(plan.query)).toString('base64url')}`;
   const query = structuredClone(plan.query) as any;
   query.query.filters.trade_filters = { filters: { price: { option: currency, max: plan.budget } } };
+  // Built from the currency-adjusted query so a caller who selected e.g. divine/chaos still
+  // gets a manual-search link filtered by their chosen currency if the API path below fails.
+  const fallbackUrl = `${BASE}/trade2/search/poe2/${encodeURIComponent(league)}?q=${Buffer.from(JSON.stringify(query)).toString('base64url')}`;
   try {
-    const response = await fetch(`${BASE}/api/trade2/search/poe2/${encodeURIComponent(league)}`, {
+    const response = await fetchWithRateLimitRetry(`${BASE}/api/trade2/search/poe2/${encodeURIComponent(league)}`, () => ({
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'User-Agent': 'poe2-orb-analyzer/1.0 (personal leveling search)' },
       body: JSON.stringify(query),
       signal: AbortSignal.timeout(12_000),
-    });
+    }));
     if (!response.ok) throw new Error(`Trade2 returned HTTP ${response.status}`);
     const search = await response.json() as { id?: string; result?: string[] };
     const officialUrl = search.id ? `${BASE}/trade2/search/poe2/${encodeURIComponent(league)}/${search.id}` : fallbackUrl;
-    const ids = selectPriceDiverseIds(search.result || [], 12);
+    // Trade2 rejects fetch requests containing more than 10 result IDs with HTTP 400.
+    const ids = selectPriceDiverseIds(search.result || [], TRADE2_MAX_FETCH_RESULTS);
     if (!search.id || !ids.length) return { ...pickPlan(plan), listings: [], officialUrl, warning: 'No matching online listings were found.' };
-    const fetched = await fetch(`${BASE}/api/trade2/fetch/${ids.join(',')}?query=${search.id}`, {
+    const fetched = await fetchWithRateLimitRetry(`${BASE}/api/trade2/fetch/${ids.join(',')}?query=${search.id}`, () => ({
       headers: { Accept: 'application/json', 'User-Agent': 'poe2-orb-analyzer/1.0 (personal leveling search)' },
       signal: AbortSignal.timeout(12_000),
-    });
+    }));
     if (!fetched.ok) throw new Error(`Trade2 listing fetch returned HTTP ${fetched.status}`);
     const payload = await fetched.json() as { result?: unknown[] };
       const listings = (payload.result || []).flatMap((row) => normalizeListing(row, plan.slot, officialUrl, level, plan.budget));
@@ -207,12 +224,28 @@ function damagePriority(profile: BuildFitProfile) {
 
 function pickPlan(plan: SearchPlan) { return { slot: plan.slot, label: plan.label, priorities: plan.priorities, budget: plan.budget }; }
 
-function selectPriceDiverseIds(ids: string[], maximum: number) {
+export function selectPriceDiverseIds(ids: string[], maximum: number) {
   if (ids.length <= maximum) return ids;
   const selected = new Set<number>();
   const cheapCount = Math.min(3, maximum);
   for (let index = 0; index < cheapCount; index += 1) selected.add(index);
   const remaining = maximum - selected.size;
-  for (let index = 1; index <= remaining; index += 1) selected.add(Math.round((index / (remaining + 1)) * (ids.length - 1)));
+  // A spread target can collide with an already-selected index (common once the result list
+  // is only slightly longer than `maximum`); walk outward to the nearest free index instead of
+  // silently deduping the collision away, so the intended count is still reached.
+  const nearestFree = (target: number) => {
+    for (let offset = 0; offset < ids.length; offset += 1) {
+      const up = target + offset;
+      if (up < ids.length && !selected.has(up)) return up;
+      const down = target - offset;
+      if (down >= 0 && !selected.has(down)) return down;
+    }
+    return null;
+  };
+  for (let index = 1; index <= remaining; index += 1) {
+    const target = Math.round((index / (remaining + 1)) * (ids.length - 1));
+    const chosen = nearestFree(target);
+    if (chosen !== null) selected.add(chosen);
+  }
   return [...selected].sort((a, b) => a - b).map((index) => ids[index]);
 }

@@ -4,6 +4,8 @@ import { evaluateItem } from './quality.js';
 import { calculateStatDeltas, formatDelta } from './statDelta.js';
 import { detectItemCategory } from './slotQuality.js';
 import { chooseUpgradeVerdict } from './upgradeVerdict.js';
+import { deriveScoringContext } from './buildScoringContext.js';
+import { genericBuildFitProfile } from './buildProfiles.js';
 import type { BuildFitProfile, CharacterTotals, DecisionConfidence, ItemCategory, ItemComparison, ItemEvaluation, ItemStats } from './types.js';
 
 export interface ComparisonOptions {
@@ -22,7 +24,8 @@ export function compareItems(candidate:ItemStats,equipped:ItemStats,options:Comp
   if(!comparable)return{enabled:true,comparable:false,compatible:false,candidateCategory,equippedCategory,verdict:'Not Comparable',explanation:`Cannot compare new ${candidateCategory.label} against equipped ${equippedCategory.label}. These items do not occupy a compatible slot for the selected build.`,confidence:'High',scoreDelta:0,gains:[],improvements:[],losses:[],warnings:['Paste the currently equipped item from the same slot.'],riskFlags:['Incompatible item categories'],statDeltas:{},betterFor:[],worseFor:[],recommendationImpact:'Do not use this comparison to replace the equipped item.'};
 
   const candidateEvaluation=options.candidateEvaluation||evaluateItem(candidate,options.selectedBuildProfile);const equippedEvaluation=options.equippedEvaluation||evaluateItem(equipped,options.selectedBuildProfile);
-  const candidateDimensions=scoreComparisonDimensions(candidate,candidateCategory.key,candidateEvaluation);const equippedDimensions=scoreComparisonDimensions(equipped,equippedCategory.key,equippedEvaluation);const dimensions=dimensionDeltas(candidateDimensions,equippedDimensions);
+  const scoringContext=deriveScoringContext(options.selectedBuildProfile??genericBuildFitProfile,options.characterTotals);
+  const candidateDimensions=scoreComparisonDimensions(candidate,candidateCategory.key,candidateEvaluation,scoringContext);const equippedDimensions=scoreComparisonDimensions(equipped,equippedCategory.key,equippedEvaluation,scoringContext);const dimensions=dimensionDeltas(candidateDimensions,equippedDimensions);
   const statDeltas=calculateStatDeltas(candidate,equipped,candidateCategory.key);const scoreDelta=Math.round(candidateEvaluation.score-equippedEvaluation.score);const buildFitDelta=buildDelta(candidateEvaluation,equippedEvaluation);
   const confidence=comparisonConfidence(candidate,equipped,candidateEvaluation,equippedEvaluation,candidateCategory.key);const composite=round(clamp(dimensions.offensive)*.22+clamp(dimensions.defensive)*.22+clamp(dimensions.utility)*.12+clamp(dimensions.category)*.18+clamp(dimensions.buildFit)*.18+clamp(dimensions.overall)*.08);
   const hasTradeoff=(dimensions.offensive>=6&&dimensions.defensive<=-6)||(dimensions.defensive>=6&&dimensions.offensive<=-6)||(Object.values(statDeltas).some((v)=>v>0)&&Object.values(statDeltas).some((v)=>v<0));
