@@ -47,6 +47,7 @@ import type {
   ReconciliationResult,
   RecommendationCalibration,
   ReplacementSaleDraft,
+  SavedCheck,
   ShoppingPlanItem,
   UpgradeBudgetPlan,
   UpgradeCandidateInput,
@@ -169,8 +170,8 @@ export const api = {
     request<{ url: string }>('/api/trade/build-url', { method: 'POST', body: JSON.stringify(body) }),
   parseUrl: (url: string) =>
     request<Record<string, unknown>>('/api/trade/parse-url', { method: 'POST', body: JSON.stringify({ url }) }),
-  checks: () => request<any[]>('/api/checks'),
-  check: (id: string) => request<any>(`/api/checks/${id}`),
+  checks: () => request<SavedCheck[]>('/api/checks'),
+  check: (id: string) => request<SavedCheck>(`/api/checks/${id}`),
   deleteCheck: (id: number) => request<void>(`/api/checks/${id}`, { method: 'DELETE' }),
   settings: () => request<AppSettings>('/api/settings'),
   saveSettings: (body: AppSettings) =>

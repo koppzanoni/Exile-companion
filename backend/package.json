@@ -21,6 +21,7 @@
     "better-sqlite3": "^12.11.1",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "poe2-orb-analyzer-shared-types": "^1.0.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

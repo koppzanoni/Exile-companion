@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
+    "packages/shared-types",
     "backend",
     "frontend"
   ],
@@ -13,10 +14,10 @@
     "test:e2e": "playwright test",
     "test:e2e:auth": "playwright test -c playwright.auth.config.ts",
     "data:sync-tree": "node scripts/sync-poe2-tree.mjs",
-    "lint": "eslint backend/src frontend/src scripts",
+    "lint": "eslint backend/src frontend/src packages/shared-types/src scripts",
     "i18n:check": "node scripts/check-i18n.mjs",
-    "format": "prettier --write \"backend/src/**/*.ts\" \"frontend/src/**/*.{ts,tsx}\" \"scripts/**/*.mjs\"",
-    "format:check": "prettier --check \"backend/src/**/*.ts\" \"frontend/src/**/*.{ts,tsx}\" \"scripts/**/*.mjs\""
+    "format": "prettier --write \"backend/src/**/*.ts\" \"frontend/src/**/*.{ts,tsx}\" \"packages/shared-types/src/**/*.ts\" \"scripts/**/*.mjs\"",
+    "format:check": "prettier --check \"backend/src/**/*.ts\" \"frontend/src/**/*.{ts,tsx}\" \"packages/shared-types/src/**/*.ts\" \"scripts/**/*.mjs\""
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

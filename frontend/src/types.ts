@@ -1,3 +1,71 @@
+import type {
+  BuildFit,
+  BuildFitAnalysis,
+  BuildFitProfile,
+  BuildPriority,
+  BuildPriorityLevel,
+  BuildStat,
+  CategoryAnalysis,
+  CharacterImpact,
+  CharacterTotals,
+  ComparisonVerdict,
+  CraftingPotential,
+  DataSource,
+  DecisionConfidence,
+  Estimate,
+  EvaluationFactor,
+  FourEvaluations,
+  ItemAction,
+  ItemCategory,
+  ItemCategoryInfo,
+  ItemComparison,
+  ItemEvaluation,
+  ItemRecommendation,
+  ItemStats,
+  KnowledgeAssessment,
+  Listing,
+  MainDecision,
+  MainDecisionAction,
+  ModifierRollInsight,
+  ParsedLineDebug,
+  PersonalizedBuildFit,
+  Rarity,
+} from 'poe2-orb-analyzer-shared-types';
+
+export type {
+  BuildFit,
+  BuildFitAnalysis,
+  BuildFitProfile,
+  BuildPriority,
+  BuildPriorityLevel,
+  BuildStat,
+  CategoryAnalysis,
+  CharacterImpact,
+  CharacterTotals,
+  ComparisonVerdict,
+  CraftingPotential,
+  DataSource,
+  DecisionConfidence,
+  Estimate,
+  EvaluationFactor,
+  FourEvaluations,
+  ItemAction,
+  ItemCategory,
+  ItemCategoryInfo,
+  ItemComparison,
+  ItemEvaluation,
+  ItemRecommendation,
+  ItemStats,
+  KnowledgeAssessment,
+  Listing,
+  MainDecision,
+  MainDecisionAction,
+  ModifierRollInsight,
+  ParsedLineDebug,
+  PersonalizedBuildFit,
+  Rarity,
+};
+
 export interface ItemInput {
   itemType: string;
   itemClass?: string;
@@ -57,148 +125,7 @@ export interface ItemInput {
   charmSlots?: number;
   parsedLines?: ParsedLineDebug[];
 }
-export interface Listing {
-  id: string;
-  name: string;
-  baseType: string;
-  price: number;
-  currency: string;
-  exaltedPrice: number;
-  similarity?: number;
-  source: string;
-  account?: string;
-  indexedAt?: string;
-  officialUrl?: string;
-  excludedReason?: string;
-  mainDifference?: string;
-  foundByStrategy?: string;
-}
-export interface Estimate {
-  quickSell: number;
-  fair: number;
-  high: number;
-  divine: { quickSell: number; fair: number; high: number };
-  confidence: string;
-  positiveMods: string[];
-  negativeMods: string[];
-  explanation: string[];
-  usedCount: number;
-  excludedCount: number;
-}
-export interface BuildFit {
-  name: string;
-  score: number;
-  fit: 'weak' | 'possible' | 'strong';
-  reasons: string[];
-  conflicts: string[];
-}
-export type BuildStat =
-  | 'life'
-  | 'mana'
-  | 'energyShield'
-  | 'armour'
-  | 'evasion'
-  | 'movementSpeed'
-  | 'fireResistance'
-  | 'coldResistance'
-  | 'lightningResistance'
-  | 'chaosResistance'
-  | 'strength'
-  | 'dexterity'
-  | 'intelligence'
-  | 'spirit'
-  | 'rarityFind'
-  | 'attacksPerSecond'
-  | 'criticalHitChance'
-  | 'physicalDps'
-  | 'elementalDps';
-export interface BuildPriority {
-  stat: BuildStat;
-  level: 'required' | 'high' | 'useful';
-  minimum?: number;
-}
 export type BuildProvider = 'Mobalytics' | 'poe.ninja' | 'Maxroll' | 'PoE Vault' | 'pobb.in';
-export interface PersonalizedBuildFit {
-  buildName: string;
-  className: string;
-  score: number;
-  fit: 'poor' | 'partial' | 'strong' | 'excellent';
-  verdict: string;
-  matched: string[];
-  missing: string[];
-  conflicts: string[];
-}
-export type ItemCategory =
-  | 'body-armour'
-  | 'helmet'
-  | 'gloves'
-  | 'boots'
-  | 'shield'
-  | 'focus'
-  | 'quiver'
-  | 'ring'
-  | 'amulet'
-  | 'belt'
-  | 'bow'
-  | 'crossbow'
-  | 'one-handed-melee'
-  | 'two-handed-melee'
-  | 'staff'
-  | 'quarterstaff'
-  | 'wand'
-  | 'sceptre'
-  | 'other';
-export interface ItemCategoryInfo {
-  key: ItemCategory;
-  label: string;
-  priorities: string[];
-}
-export interface ParsedLineDebug {
-  line: string;
-  fields: string[];
-  values: Array<string | number | boolean>;
-}
-export interface CategoryAnalysis {
-  detectedCategory: ItemCategoryInfo;
-  detectionReason: string;
-  categoryScore: number;
-  positiveStats: string[];
-  weakOrWastedStats: string[];
-  missingImportantStats: string[];
-  marketRelevantStats: string[];
-  buildRelevantStats: string[];
-  tradeSearchPriorities: string[];
-  confidence: number;
-  warnings: string[];
-  parsedLines: ParsedLineDebug[];
-}
-export interface BuildFitProfile {
-  id: string;
-  source: 'default' | 'custom' | 'generic';
-  name: string;
-  className: string;
-  ascendancy?: string;
-  mainSkill: string;
-  guideUrl?: string;
-  stage: 'campaign' | 'early-maps' | 'established' | 'transition' | 'endgame' | 'aspirational';
-  evaluationStyle: 'balanced' | 'campaign-race' | 'hardcore-gauntlet';
-  preferredWeaponTypes: ItemCategory[];
-  damageTypes: string[];
-  defensiveLayers: string[];
-  offensiveStats: string[];
-  defensiveStats: string[];
-  attributes: string[];
-  utilityStats: string[];
-  wastedStats: string[];
-  valuableSlots: ItemCategory[];
-  categoryPriorities: Partial<Record<ItemCategory, string[]>>;
-  explanationRules: string[];
-  defenceStyle: 'life-armour' | 'life-evasion' | 'energy-shield' | 'hybrid' | 'custom';
-  priorities: BuildPriority[];
-  requiredMods: string[];
-  desiredMods: string[];
-  notes?: string;
-}
 export type BuildProfile = BuildFitProfile;
 export interface ImportedField {
   field: string;
@@ -231,48 +158,6 @@ export interface CustomBuildProfileInput {
   importantStats: string[];
   badStats: string[];
   notes?: string;
-}
-export interface BuildFitAnalysis {
-  profileId: string;
-  profileName: string;
-  buildSpecific: boolean;
-  score: number;
-  label: 'Bad' | 'Usable' | 'Good' | 'Great' | 'Build-defining';
-  fitsBecause: string[];
-  doesNotFitBecause: string[];
-  bestUseCase: 'leveling' | 'campaign' | 'early maps' | 'endgame' | 'bossing' | 'niche' | 'vendor';
-  missingImportantStats: string[];
-  wastedStats: string[];
-  recommendedAction: 'Use' | 'Sell' | 'Craft' | 'Replace Soon' | 'Vendor' | 'Price Check';
-  confidence: number;
-  warnings: string[];
-}
-export type ItemAction = 'Use' | 'Sell' | 'Craft' | 'Replace Soon' | 'Price Check' | 'Vendor' | 'Keep for Later';
-export interface CraftingPotential {
-  score: number;
-  label:
-    | 'Do Not Craft'
-    | 'Low Potential'
-    | 'Maybe Craft'
-    | 'Good Crafting Base'
-    | 'High Potential'
-    | 'Premium Crafting Base';
-  confidence: 'Low' | 'Medium' | 'High';
-  recommendation: string;
-  reasons: string[];
-  risks: string[];
-  bestPossibleImprovements: string[];
-  avoidActions: string[];
-  suggestedCurrencyUse: string[];
-  currencyWarnings: string[];
-  baseQuality: { score: number; label: string; reasons: string[] };
-  rollQuality: {
-    score: number;
-    label: string;
-    strongRolls: string[];
-    weakRolls: string[];
-    missingRolls: string[];
-  };
 }
 export interface AppSettings {
   divineToExalted: number;
@@ -345,107 +230,6 @@ export interface KnowledgeStatus {
   sources: Array<Record<string, unknown>>;
   counts: Record<string, number>;
   generatedAt: string;
-}
-export interface ItemRecommendation {
-  action: ItemAction;
-  confidence: 'Low' | 'Medium' | 'High';
-  shortReason: string;
-  detailedReason: string[];
-  secondaryAction?: ItemAction;
-  doThisNext: string[];
-  warnings: string[];
-  hiddenValueFlags: string[];
-  craftingPotential: CraftingPotential;
-  whatWouldMakeBetter: string[];
-  checkBeforeSelling: string[];
-  safeToVendor: boolean;
-  manualPriceCheck: boolean;
-  mayHaveHiddenValue: boolean;
-  bestUseCase: BuildFitAnalysis['bestUseCase'];
-}
-export interface ModifierRollInsight {
-  modifier: string;
-  tier?: number;
-  percentile: number;
-  label: 'low' | 'average' | 'high' | 'perfect';
-}
-export interface KnowledgeAssessment {
-  ruleset: string;
-  confidence: {
-    score: number;
-    level: 'low' | 'medium' | 'high';
-    reasons: string[];
-    warnings: string[];
-  };
-  rolls: ModifierRollInsight[];
-  recognizedModifiers: number;
-  totalModifiers: number;
-  itemLevelNote: string;
-  craftingNotes: string[];
-}
-export interface ItemEvaluation {
-  score: number;
-  grade: 'poor' | 'basic' | 'good' | 'excellent' | 'elite';
-  label: string;
-  verdict: string;
-  marketability: 'low' | 'niche' | 'broad';
-  strengths: string[];
-  weaknesses: string[];
-  buildFits: BuildFit[];
-  upgradePriorities: string[];
-  personalized?: PersonalizedBuildFit;
-  category?: ItemCategoryInfo;
-  knowledge?: KnowledgeAssessment;
-  categoryAnalysis?: CategoryAnalysis;
-  buildFitAnalysis?: BuildFitAnalysis;
-}
-export type ComparisonVerdict =
-  | 'Clear Upgrade'
-  | 'Small Upgrade'
-  | 'Sidegrade'
-  | 'Situational Upgrade'
-  | 'Defensive Upgrade'
-  | 'Offensive Upgrade'
-  | 'Downgrade'
-  | 'Not Comparable'
-  | 'Needs Manual Review';
-export interface CharacterTotals {
-  fireResistance?: number;
-  coldResistance?: number;
-  lightningResistance?: number;
-  chaosResistance?: number;
-  strength?: number;
-  dexterity?: number;
-  intelligence?: number;
-  spirit?: number;
-}
-export interface CharacterImpact {
-  before: Record<string, number>;
-  after: Record<string, number>;
-  warnings: string[];
-}
-export interface ItemComparison {
-  enabled: boolean;
-  comparable: boolean;
-  compatible: boolean;
-  candidateCategory: ItemCategoryInfo;
-  equippedCategory: ItemCategoryInfo;
-  verdict: ComparisonVerdict;
-  explanation: string;
-  confidence: 'Low' | 'Medium' | 'High';
-  scoreDelta: number;
-  buildFitDelta?: number;
-  personalizedDelta?: number;
-  gains: string[];
-  improvements: string[];
-  losses: string[];
-  warnings: string[];
-  riskFlags: string[];
-  statDeltas: Record<string, number>;
-  characterImpact?: CharacterImpact;
-  betterFor: string[];
-  worseFor: string[];
-  recommendationImpact: string;
 }
 export type MarketDataSource =
   'live' | 'relaxed-live' | 'insufficient-live' | 'similarity-fallback' | 'cache' | 'manual' | 'none';
@@ -541,27 +325,6 @@ export interface StatValuation {
   overallScore: number;
   contributions: StatContribution[];
   warnings: string[];
-}
-export interface EvaluationFactor {
-  score: number;
-  confidence: 'High' | 'Medium' | 'Low';
-  summary: string;
-  positiveFactors: string[];
-  negativeFactors: string[];
-  dataUsed: string[];
-  limitations: string[];
-}
-export interface FourEvaluations {
-  buildFit: EvaluationFactor;
-  upgradeValue: EvaluationFactor;
-  marketValue: EvaluationFactor;
-  craftPotential: EvaluationFactor;
-}
-export type MainDecisionAction = 'Use' | 'Sell' | 'Craft' | 'Keep' | 'Discard';
-export interface MainDecision {
-  action: MainDecisionAction;
-  reason: string;
-  conditionsToChange: string[];
 }
 export interface AlternativeListing {
   listing: Listing;
@@ -767,6 +530,28 @@ export interface Analysis {
   transitionBundle?: AnalysisFoundations['transitionBundle'];
   criticalRegressions?: string[];
   timestamp: string;
+}
+export interface SavedCheck {
+  id: number;
+  league: string;
+  item: ItemInput;
+  result: Estimate | null;
+  evaluation: ItemEvaluation;
+  comparison?: ItemComparison;
+  craftingPotential: CraftingPotential;
+  recommendation: ItemRecommendation;
+  marketAnalysis?: MarketAnalysis;
+  statValuation?: StatValuation;
+  equippedStatValuation?: StatValuation;
+  evaluations?: FourEvaluations;
+  decision?: MainDecision;
+  opportunity?: OpportunityAnalysis;
+  beginnerSummary?: string;
+  dataSource: MarketDataSource;
+  officialUrl: string;
+  warning?: string;
+  createdAt: string;
+  comparableListings?: Listing[];
 }
 export interface RaceReview {
   id: number;

@@ -2,9 +2,10 @@ import { Archive, ExternalLink, LoaderCircle, Search, Trash2 } from 'lucide-reac
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Currency } from '../components/Currency';
+import type { SavedCheck } from '../types';
 
 export function SavedPage() {
-  const [checks, setChecks] = useState<any[] | null>(null);
+  const [checks, setChecks] = useState<SavedCheck[] | null>(null);
   const [query, setQuery] = useState('');
   const load = () =>
     api
