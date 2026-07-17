@@ -284,6 +284,44 @@ describe('session authentication', () => {
     expect(ownToolExecute.status).not.toBe(404);
     db.close();
   });
+  it("blocks a signed-in user from exporting another user's character data and returns full data for the owner", async () => {
+    process.env.AUTH_REQUIRED = 'true';
+    const db = createDatabase(':memory:'),
+      app = createApp(db),
+      owner = await request(app)
+        .post('/api/auth/register')
+        .send({ email: 'export-owner@example.com', password: 'owner-password', displayName: 'Owner' }),
+      attacker = await request(app)
+        .post('/api/auth/register')
+        .send({ email: 'export-attacker@example.com', password: 'attacker-password', displayName: 'Attacker' }),
+      created = await request(app)
+        .post('/api/characters')
+        .set('Cookie', owner.headers['set-cookie'][0])
+        .set('x-csrf-token', owner.body.csrfToken)
+        .send({ name: 'Exportable', league: 'Test' }),
+      characterId = created.body.character.id;
+    await request(app)
+      .put(`/api/characters/${characterId}/equipment`)
+      .set('Cookie', owner.headers['set-cookie'][0])
+      .set('x-csrf-token', owner.body.csrfToken)
+      .send({ equipment: [{ slot: 'boots', itemText: 'Stone Greaves\n+70 to maximum Life' }] })
+      .expect(200);
+    const blocked = await request(app)
+      .get(`/api/characters/${characterId}/export`)
+      .set('Cookie', attacker.headers['set-cookie'][0]);
+    expect(blocked.status).toBe(404);
+    const exported = await request(app)
+      .get(`/api/characters/${characterId}/export`)
+      .set('Cookie', owner.headers['set-cookie'][0])
+      .expect(200);
+    expect(exported.body.character.id).toBe(characterId);
+    expect(exported.body.equipment).toHaveLength(1);
+    expect(exported.body.equipment[0].slot).toBe('boots');
+    expect(exported.body.snapshots).toEqual([]);
+    expect(exported.body.purchases).toEqual([]);
+    expect(exported.body.alerts).toEqual([]);
+    db.close();
+  });
   it("blocks a signed-in user from modifying another user's monitor job", async () => {
     process.env.AUTH_REQUIRED = 'true';
     const db = createDatabase(':memory:'),
