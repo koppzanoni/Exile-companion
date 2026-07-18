@@ -21,6 +21,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PassiveAllocationMap } from '../components/PassiveAllocationMap';
 import { BuildScenarioLab } from '../components/BuildScenarioLab';
 import { PublicProfileTimeline } from '../components/PublicProfileTimeline';
+import { EquipmentTab } from './characters/EquipmentTab';
 import { useI18n } from '../i18n';
 import { ascendanciesForRoster, rosterOptions, type RosterResponse } from '../poeClasses';
 import type {
@@ -1169,33 +1170,7 @@ export function CharactersPage() {
             </div>
           </section>
 
-          {selectedId && (
-            <section className="card build-card" data-tab-group="equipment">
-              <div className="build-section-title">
-                <UserCircle2 />
-                <div>
-                  <h2>{text('Equipment', 'Equipamentos')}</h2>
-                  <p>Saved once here, reused everywhere — Build Doctor, leveling, and item analysis.</p>
-                </div>
-              </div>
-              <div className="priority-grid">
-                {equipment.map((entry) => (
-                  <article key={entry.slot}>
-                    <div>
-                      <strong>{entry.slot}</strong>
-                    </div>
-                    <textarea
-                      aria-label={`${entry.slot} ${text('item text', 'texto do item')}`}
-                      rows={3}
-                      value={entry.itemText}
-                      onChange={(e) => setSlotText(entry.slot, e.target.value)}
-                      placeholder="Paste exported item text…"
-                    />
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
+          {selectedId && <EquipmentTab equipment={equipment} setSlotText={setSlotText} text={text} />}
 
           {selectedId && (
             <section className="card build-card" data-tab-group="build">
