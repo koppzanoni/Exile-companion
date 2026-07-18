@@ -3,7 +3,9 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
+COPY packages/shared-types/package.json packages/shared-types/package.json
 RUN npm install && ROLLUP_VERSION=$(node -p "require('./node_modules/rollup/package.json').version") && npm install --no-save "@rollup/rollup-linux-x64-gnu@$ROLLUP_VERSION"
+COPY packages/shared-types packages/shared-types
 COPY backend backend
 
 FROM dependencies AS test
