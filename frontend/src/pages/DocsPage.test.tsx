@@ -23,4 +23,9 @@ describe('DocsPage', () => {
     expect(officialLink).toHaveAttribute('target', '_blank');
     expect(officialLink).toHaveAttribute('rel', 'noreferrer');
   });
+
+  it('exposes the table of contents as a labeled navigation landmark', () => {
+    render(<DocsPage />);
+    expect(screen.getByRole('navigation', { name: 'Table of contents' })).toBeInTheDocument();
+  });
 });

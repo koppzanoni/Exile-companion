@@ -110,7 +110,7 @@ export function SalesPage() {
         </button>
       </section>
       {loading ? (
-        <div className="loading">
+        <div className="loading" role="status">
           <LoaderCircle className="spin" />
           {t('sales.loading')}
         </div>

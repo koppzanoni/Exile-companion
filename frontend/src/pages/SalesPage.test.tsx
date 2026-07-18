@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SalesPage } from './SalesPage';
@@ -83,5 +83,25 @@ describe('SalesPage', () => {
     stubFetch([]);
     renderPage();
     expect(screen.getByRole('button', { name: 'Add listing' })).toBeDisabled();
+  });
+
+  it('announces the loading state to assistive technology', async () => {
+    let resolveSales!: (value: { ok: true; status: 200; json: () => Promise<{ sales: unknown[] }> }) => void;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string) => {
+        const url = String(input);
+        if (url.endsWith('/api/sales'))
+          return new Promise((resolve) => {
+            resolveSales = resolve;
+          });
+        if (url.endsWith('/api/sales/advice')) return { ok: true, status: 200, json: async () => ({ advice: [] }) };
+        throw new Error(`unexpected request: ${url}`);
+      }),
+    );
+    renderPage();
+    expect(screen.getByRole('status')).toHaveTextContent('Loading sales…');
+    resolveSales({ ok: true, status: 200, json: async () => ({ sales: [] }) });
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
   });
 });

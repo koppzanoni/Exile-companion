@@ -30,4 +30,11 @@ describe('saved checks', () => {
     render(<SavedPage />);
     expect(await screen.findByText('Recommendation: Price Check · High')).toBeInTheDocument();
   });
+
+  it('labels the icon-only trade and delete actions for screen readers', async () => {
+    render(<SavedPage />);
+    await screen.findByText('Recommendation: Price Check · High');
+    expect(screen.getByLabelText('Open official trade for Aegis Crest')).toBeInTheDocument();
+    expect(screen.getByLabelText('Delete saved check for Aegis Crest')).toBeInTheDocument();
+  });
 });

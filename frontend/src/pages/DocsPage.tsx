@@ -9,7 +9,7 @@ export function DocsPage() {
         <p>A short guide to reading estimates without mistaking them for certainty.</p>
       </header>
       <div className="docs-layout">
-        <nav className="card docs-nav">
+        <nav className="card docs-nav" aria-label="Table of contents">
           <strong>CONTENTS</strong>
           <a href="#workflow">Workflow</a>
           <a href="#quality">Item quality</a>

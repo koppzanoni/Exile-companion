@@ -40,12 +40,12 @@ export function SavedPage() {
         />
       </div>
       {!checks ? (
-        <div className="loading">
+        <div className="loading" role="status">
           <LoaderCircle className="spin" />
           Loading your journal…
         </div>
       ) : !visible.length ? (
-        <div className="empty-state">
+        <div className="empty-state" role="status">
           <Archive />
           <h2>No saved checks found</h2>
           <p>Analyze an item and it will appear here automatically.</p>
@@ -84,10 +84,20 @@ export function SavedPage() {
                 <span className="no-estimate">Quality only</span>
               )}
               <div className="saved-actions">
-                <a href={check.officialUrl} target="_blank" rel="noreferrer" title="Open official trade">
+                <a
+                  href={check.officialUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open official trade"
+                  aria-label={`Open official trade for ${check.item?.name || check.item?.baseType || 'this item'}`}
+                >
                   <ExternalLink />
                 </a>
-                <button onClick={() => remove(check.id)} title="Delete">
+                <button
+                  onClick={() => remove(check.id)}
+                  title="Delete"
+                  aria-label={`Delete saved check for ${check.item?.name || check.item?.baseType || 'this item'}`}
+                >
                   <Trash2 />
                 </button>
               </div>
