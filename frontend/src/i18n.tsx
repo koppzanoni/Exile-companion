@@ -199,7 +199,7 @@ const en = {
   'doctor.diagnose': 'Diagnose build',
   'doctor.paste': 'Paste exported item text…',
 } as const;
-type TranslationKey = keyof typeof en;
+export type TranslationKey = keyof typeof en;
 const pt: Record<TranslationKey, string> = {
   'language.label': 'Idioma',
   'language.english': 'English',
