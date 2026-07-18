@@ -16,11 +16,10 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import { GeminiCoach } from '../components/GeminiCoach';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PassiveAllocationMap } from '../components/PassiveAllocationMap';
-import { BuildScenarioLab } from '../components/BuildScenarioLab';
 import { PublicProfileTimeline } from '../components/PublicProfileTimeline';
+import { AssistantTab } from './characters/AssistantTab';
 import { BuildTab } from './characters/BuildTab';
 import { EquipmentTab } from './characters/EquipmentTab';
 import { EvolutionTab } from './characters/EvolutionTab';
@@ -1224,95 +1223,50 @@ export function CharactersPage() {
             />
           )}
 
-          {selectedId && (poe?.connections || []).length > 0 && (
-            <section className="card build-card" data-tab-group="assistant">
-              <div className="build-section-title">
-                <Cloud />
-                <div>
-                  <h2>Official account reconciliation</h2>
-                  <p>Preview differences first; applying always requires a second confirmation.</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => previewReconciliation(poe!.connections[0].id)}>
-                Compare with PoE account
-              </button>
-              {reconciliation && (
-                <>
-                  <div className="review-list">
-                    {reconciliation.differences.map((diff) => (
-                      <article key={diff.slot}>
-                        <div>
-                          <strong>
-                            {diff.slot} · {diff.status}
-                          </strong>
-                          <small>Local and official equipment differ.</small>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                  {reconciliation.requiresConfirmation && (
-                    <button
-                      className="primary-button"
-                      type="button"
-                      onClick={() => applyReconciliation(poe!.connections[0].id)}
-                    >
-                      Confirm official reconciliation
-                    </button>
-                  )}
-                </>
-              )}
-            </section>
-          )}
-
           {selectedId && (
-            <div data-tab-group="assistant">
-              <BuildScenarioLab
-                plan={actionPlan}
-                diagnostics={profileDiagnostics}
-                onAskGemini={(prompt) => {
-                  setMessage(`Build Lab prompt ready: ${prompt}`);
-                  document.querySelector<HTMLTextAreaElement>('[aria-label="Ask Gemini about this build"]')?.focus();
-                }}
-              />
-            </div>
-          )}
-
-          {selectedId && (
-            <div data-tab-group="assistant">
-              <GeminiCoach
-                mode="build"
-                characterId={selectedId}
-                context={{
-                  screen: 'character',
-                  requestedBudget: form.budget,
-                  loadoutDraft: {
-                    ...loadout,
-                    skills: textToSkills(skillsText),
-                    keyPassives: passivesText.split('\n').filter(Boolean),
-                  },
-                  actionPlan,
-                  shopping,
-                  publicProfile,
-                  profileDiagnostics,
-                  profileCatalogs,
-                }}
-                onAction={(action) => {
-                  if (action.action === 'search_upgrade' && action.slot)
-                    setMessage(
-                      `Gemini suggested a live search for ${action.slot}. Confirm it with “Find and simulate” in the shopping plan.`,
-                    );
-                  else if ((action.action === 'inspect_slot' || action.action === 'view_shopping_plan') && selectedId)
-                    void api
-                      .executeGeminiTool({
-                        characterId: selectedId,
-                        action: action.action,
-                        slot: action.slot,
-                      })
-                      .then((result) => setMessage(`Gemini tool completed read-only: ${result.action}.`))
-                      .catch((e) => setError(e instanceof Error ? e.message : 'Tool failed.'));
-                }}
-              />
-            </div>
+            <AssistantTab
+              selectedId={selectedId}
+              poeConnectionId={(poe?.connections || []).length > 0 ? poe!.connections[0].id : null}
+              previewReconciliation={previewReconciliation}
+              applyReconciliation={applyReconciliation}
+              reconciliation={reconciliation}
+              actionPlan={actionPlan}
+              profileDiagnostics={profileDiagnostics}
+              onAskGemini={(prompt) => {
+                setMessage(`Build Lab prompt ready: ${prompt}`);
+                document.querySelector<HTMLTextAreaElement>('[aria-label="Ask Gemini about this build"]')?.focus();
+              }}
+              characterId={selectedId}
+              geminiContext={{
+                screen: 'character',
+                requestedBudget: form.budget,
+                loadoutDraft: {
+                  ...loadout,
+                  skills: textToSkills(skillsText),
+                  keyPassives: passivesText.split('\n').filter(Boolean),
+                },
+                actionPlan,
+                shopping,
+                publicProfile,
+                profileDiagnostics,
+                profileCatalogs,
+              }}
+              onGeminiAction={(action) => {
+                if (action.action === 'search_upgrade' && action.slot)
+                  setMessage(
+                    `Gemini suggested a live search for ${action.slot}. Confirm it with “Find and simulate” in the shopping plan.`,
+                  );
+                else if ((action.action === 'inspect_slot' || action.action === 'view_shopping_plan') && selectedId)
+                  void api
+                    .executeGeminiTool({
+                      characterId: selectedId,
+                      action: action.action,
+                      slot: action.slot,
+                    })
+                    .then((result) => setMessage(`Gemini tool completed read-only: ${result.action}.`))
+                    .catch((e) => setError(e instanceof Error ? e.message : 'Tool failed.'));
+              }}
+            />
           )}
 
           {detail?.diagnosis && (
