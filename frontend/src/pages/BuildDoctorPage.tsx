@@ -1,12 +1,8 @@
 import {
   AlertTriangle,
-  Check,
-  Coins,
   ExternalLink,
   HeartPulse,
-  History,
   LoaderCircle,
-  Save,
   Search,
   ShieldCheck,
   Sparkles,
@@ -21,6 +17,8 @@ import { GeminiCoach } from '../components/GeminiCoach';
 import { UpgradeCandidatePlanner } from '../components/UpgradeCandidatePlanner';
 import { parseEquipmentBundle, type EquipmentImportPreview } from '../equipmentImport';
 import { EquipmentInputSection } from './buildDoctor/EquipmentInputSection';
+import { RoadmapsSection } from './buildDoctor/RoadmapsSection';
+import { SnapshotComparisonSection } from './buildDoctor/SnapshotComparisonSection';
 import type {
   BuildDoctorResult,
   BuildFitProfile,
@@ -49,13 +47,6 @@ const blankEquipment: EquipmentSlotInput[] = slotNames.map((slot) => ({
   slot,
   itemText: '',
 }));
-function snapshotDiagnosis(row: Record<string, unknown>): BuildDoctorResult | null {
-  try {
-    return typeof row.diagnosisJson === 'string' ? (JSON.parse(row.diagnosisJson) as BuildDoctorResult) : null;
-  } catch {
-    return null;
-  }
-}
 
 export function BuildDoctorPage() {
   const { t, locale } = useI18n();
@@ -885,137 +876,17 @@ export function BuildDoctorPage() {
               )}
             </section>
           )}
-          {result &&
-            loadedCharacter &&
-            snapshots.length >= 2 &&
-            (() => {
-              const current = snapshotDiagnosis(snapshots[0]),
-                previous = snapshotDiagnosis(snapshots[1]);
-              if (!current || !previous) return null;
-              const delta = current.profile.overallScore - previous.profile.overallScore;
-              return (
-                <section className="card build-card build-doctor-snapshot-compare">
-                  <div className="build-section-title">
-                    <History />
-                    <div>
-                      <h2>{text('Latest snapshot comparison', 'Comparação dos snapshots mais recentes')}</h2>
-                      <p>Immutable saved states from before confirmed equipment changes.</p>
-                    </div>
-                  </div>
-                  <div className="snapshot-score-change">
-                    <span>
-                      <small>PREVIOUS</small>
-                      <strong>{previous.profile.overallScore}</strong>
-                    </span>
-                    <b className={delta >= 0 ? 'positive' : 'negative'}>
-                      {delta >= 0 ? '+' : ''}
-                      {delta}
-                    </b>
-                    <span>
-                      <small>LATEST</small>
-                      <strong>{current.profile.overallScore}</strong>
-                    </span>
-                  </div>
-                  <div className="snapshot-stat-grid">
-                    {Object.keys(current.resistances.current).map((key) => {
-                      const before = previous.resistances.current[key] || 0,
-                        after = current.resistances.current[key] || 0,
-                        diff = after - before;
-                      return (
-                        <span key={key}>
-                          <small>{key.replace('Resistance', ' RES')}</small>
-                          <b>
-                            {before}% → {after}%
-                          </b>
-                          <em className={diff >= 0 ? 'positive' : 'negative'}>
-                            {diff >= 0 ? '+' : ''}
-                            {diff}
-                          </em>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </section>
-              );
-            })()}
+          {result && loadedCharacter && <SnapshotComparisonSection snapshots={snapshots} text={text} />}
           {result && loadedCharacter && roadmaps.length > 0 && (
-            <section className="card build-card build-doctor-roadmaps">
-              <div className="build-section-title">
-                <Coins />
-                <div>
-                  <h2>{text('Upgrade roadmaps', 'Roteiros de upgrades')}</h2>
-                  <p>
-                    Three allocations derived from the character's saved budget. Prices are planning limits, not
-                    verified listing prices.
-                  </p>
-                </div>
-              </div>
-              {savedRoadmap && (
-                <div className="roadmap-saved" role="status">
-                  <Check /> {savedRoadmap} roadmap saved to the shopping list.
-                </div>
-              )}
-              <div className="roadmap-grid">
-                {roadmaps.map((entry) => (
-                  <article key={entry.label}>
-                    <div>
-                      <span>{entry.label}</span>
-                      <strong>{entry.plan.budget} Exalted</strong>
-                    </div>
-                    <ol>
-                      {entry.plan.purchases.slice(0, 3).map((item) => (
-                        <li key={item.slot}>
-                          <b>
-                            #{item.rank} {item.slot}
-                          </b>
-                          <span>
-                            {item.suggestedBudget} Ex · {item.priority}
-                          </span>
-                          <small>{item.reason}</small>
-                          {item.tradeUrl && (
-                            <a href={item.tradeUrl} target="_blank" rel="noreferrer">
-                              Open Trade2 <ExternalLink />
-                            </a>
-                          )}
-                        </li>
-                      ))}
-                    </ol>
-                    {!entry.plan.purchases.length && (
-                      <p>No upgrade priority is available with the current diagnosis.</p>
-                    )}
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      disabled={!entry.plan.purchases.length}
-                      onClick={() => setRoadmapToSave(entry)}
-                    >
-                      <Save />
-                      {text('Save roadmap', 'Salvar roteiro')}
-                    </button>
-                  </article>
-                ))}
-              </div>
-              {roadmapToSave && (
-                <div className="roadmap-confirm" role="alertdialog" aria-labelledby="roadmap-confirm-title">
-                  <div>
-                    <strong id="roadmap-confirm-title">Save {roadmapToSave.label} roadmap?</strong>
-                    <span>
-                      This will add its {roadmapToSave.plan.purchases.length} recommendations to the character shopping
-                      list.
-                    </span>
-                  </div>
-                  <div>
-                    <button type="button" onClick={() => setRoadmapToSave(null)}>
-                      Cancel
-                    </button>
-                    <button className="primary-button" type="button" disabled={importLoading} onClick={saveRoadmap}>
-                      <Check />
-                      {text('Confirm save', 'Confirmar salvamento')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
+            <RoadmapsSection
+              roadmaps={roadmaps}
+              savedRoadmap={savedRoadmap}
+              roadmapToSave={roadmapToSave}
+              setRoadmapToSave={setRoadmapToSave}
+              saveRoadmap={saveRoadmap}
+              importLoading={importLoading}
+              text={text}
+            />
           )}
           {result && (
             <GeminiCoach
