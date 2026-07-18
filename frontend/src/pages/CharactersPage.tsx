@@ -183,27 +183,13 @@ export function CharactersPage() {
       .catch(() => {});
   }, []);
   useEffect(() => {
-    const groups: Record<string, string[]> = {
-      profile: ['poe.ninja character profile'],
-      equipment: ['equipment'],
-      build: ['build loadout'],
-      upgrades: ['prioritized shopping', 'simulated live', 'saved purchase'],
-      evolution: [
-        'build investment',
-        'dashboard filters',
-        'evolution dashboard',
-        'net upgrade',
-        'replaced items',
-        'market alerts',
-        'recommendation accuracy',
-      ],
-      assistant: ['official account reconciliation', 'ask about this build'],
-    };
-    for (const section of document.querySelectorAll<HTMLElement>('.build-main > section')) {
-      const title = (section.querySelector('h2')?.textContent || '').toLowerCase();
-      const group =
-        Object.entries(groups).find(([, labels]) => labels.some((label) => title.includes(label)))?.[0] || 'overview';
-      section.hidden = group !== activeTab;
+    // Each top-level section/wrapper under .build-main declares its own tab via
+    // data-tab-group; sections without the attribute default to 'overview'. This
+    // replaced matching on translated <h2> text, which silently misplaced
+    // sections whenever their heading was localized (the group keywords were
+    // hardcoded English strings).
+    for (const section of document.querySelectorAll<HTMLElement>('.build-main > [data-tab-group]')) {
+      section.hidden = section.dataset.tabGroup !== activeTab;
     }
   }, [activeTab, selectedId, detail, shopping, evolution, alerts, calibration, reconciliation, publicProfile]);
   useEffect(() => {
@@ -656,7 +642,7 @@ export function CharactersPage() {
       <div className="build-layout">
         <div className="build-main" id={`character-${activeTab}`}>
           {selectedId && (
-            <section className="card build-card public-profile-panel">
+            <section className="card build-card public-profile-panel" data-tab-group="profile">
               <div className="build-section-title">
                 <Cloud />
                 <div>
@@ -895,7 +881,7 @@ export function CharactersPage() {
               )}
             </section>
           )}
-          <section className="card build-card">
+          <section className="card build-card" data-tab-group="overview">
             <div className="build-section-title">
               <Cloud />
               <div>
@@ -966,7 +952,7 @@ export function CharactersPage() {
               </button>
             )}
           </section>
-          <section className="card build-card">
+          <section className="card build-card" data-tab-group="overview">
             <div className="build-section-title">
               <Users />
               <div>
@@ -1013,7 +999,7 @@ export function CharactersPage() {
             )}
           </section>
 
-          <section className="card build-card">
+          <section className="card build-card" data-tab-group="overview">
             <div className="build-section-title">
               <UserCircle2 />
               <div>
@@ -1184,7 +1170,7 @@ export function CharactersPage() {
           </section>
 
           {selectedId && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="equipment">
               <div className="build-section-title">
                 <UserCircle2 />
                 <div>
@@ -1212,7 +1198,7 @@ export function CharactersPage() {
           )}
 
           {selectedId && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="build">
               <div className="build-section-title">
                 <UserCircle2 />
                 <div>
@@ -1395,7 +1381,7 @@ export function CharactersPage() {
           )}
 
           {selectedId && actionPlan && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="upgrades">
               <div className="build-section-title">
                 <Users />
                 <div>
@@ -1452,7 +1438,7 @@ export function CharactersPage() {
           )}
 
           {marketCandidates && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="upgrades">
               <div className="build-section-title">
                 <Users />
                 <div>
@@ -1503,7 +1489,7 @@ export function CharactersPage() {
           )}
 
           {shopping.length > 0 && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="upgrades">
               <div className="build-section-title">
                 <Check />
                 <div>
@@ -1545,7 +1531,7 @@ export function CharactersPage() {
           )}
 
           {purchaseHistory && purchaseHistory.purchases.length > 0 && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="evolution">
               <div className="build-section-title">
                 <History />
                 <div>
@@ -1593,7 +1579,7 @@ export function CharactersPage() {
           )}
 
           {selectedId && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="evolution">
               <div className="build-section-title">
                 <History />
                 <div>
@@ -1666,7 +1652,7 @@ export function CharactersPage() {
           )}
 
           {evolution && evolution.snapshots.length > 0 && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="evolution">
               <div className="build-section-title">
                 <History />
                 <div>
@@ -1710,7 +1696,7 @@ export function CharactersPage() {
           )}
 
           {netCosts && netCosts.rows.length > 0 && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="evolution">
               <div className="build-section-title">
                 <History />
                 <div>
@@ -1740,7 +1726,7 @@ export function CharactersPage() {
           )}
 
           {saleDrafts.some((draft) => draft.status === 'needs-price') && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="evolution">
               <div className="build-section-title">
                 <History />
                 <div>
@@ -1767,7 +1753,7 @@ export function CharactersPage() {
           )}
 
           {alerts.length > 0 && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="evolution">
               <div className="build-section-title">
                 <History />
                 <div>
@@ -1800,7 +1786,7 @@ export function CharactersPage() {
           )}
 
           {calibration && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="evolution">
               <div className="build-section-title">
                 <History />
                 <div>
@@ -1831,7 +1817,7 @@ export function CharactersPage() {
           )}
 
           {selectedId && (poe?.connections || []).length > 0 && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="assistant">
               <div className="build-section-title">
                 <Cloud />
                 <div>
@@ -1871,54 +1857,58 @@ export function CharactersPage() {
           )}
 
           {selectedId && (
-            <BuildScenarioLab
-              plan={actionPlan}
-              diagnostics={profileDiagnostics}
-              onAskGemini={(prompt) => {
-                setMessage(`Build Lab prompt ready: ${prompt}`);
-                document.querySelector<HTMLTextAreaElement>('[aria-label="Ask Gemini about this build"]')?.focus();
-              }}
-            />
+            <div data-tab-group="assistant">
+              <BuildScenarioLab
+                plan={actionPlan}
+                diagnostics={profileDiagnostics}
+                onAskGemini={(prompt) => {
+                  setMessage(`Build Lab prompt ready: ${prompt}`);
+                  document.querySelector<HTMLTextAreaElement>('[aria-label="Ask Gemini about this build"]')?.focus();
+                }}
+              />
+            </div>
           )}
 
           {selectedId && (
-            <GeminiCoach
-              mode="build"
-              characterId={selectedId}
-              context={{
-                screen: 'character',
-                requestedBudget: form.budget,
-                loadoutDraft: {
-                  ...loadout,
-                  skills: textToSkills(skillsText),
-                  keyPassives: passivesText.split('\n').filter(Boolean),
-                },
-                actionPlan,
-                shopping,
-                publicProfile,
-                profileDiagnostics,
-                profileCatalogs,
-              }}
-              onAction={(action) => {
-                if (action.action === 'search_upgrade' && action.slot)
-                  setMessage(
-                    `Gemini suggested a live search for ${action.slot}. Confirm it with “Find and simulate” in the shopping plan.`,
-                  );
-                else if ((action.action === 'inspect_slot' || action.action === 'view_shopping_plan') && selectedId)
-                  void api
-                    .executeGeminiTool({
-                      characterId: selectedId,
-                      action: action.action,
-                      slot: action.slot,
-                    })
-                    .then((result) => setMessage(`Gemini tool completed read-only: ${result.action}.`))
-                    .catch((e) => setError(e instanceof Error ? e.message : 'Tool failed.'));
-              }}
-            />
+            <div data-tab-group="assistant">
+              <GeminiCoach
+                mode="build"
+                characterId={selectedId}
+                context={{
+                  screen: 'character',
+                  requestedBudget: form.budget,
+                  loadoutDraft: {
+                    ...loadout,
+                    skills: textToSkills(skillsText),
+                    keyPassives: passivesText.split('\n').filter(Boolean),
+                  },
+                  actionPlan,
+                  shopping,
+                  publicProfile,
+                  profileDiagnostics,
+                  profileCatalogs,
+                }}
+                onAction={(action) => {
+                  if (action.action === 'search_upgrade' && action.slot)
+                    setMessage(
+                      `Gemini suggested a live search for ${action.slot}. Confirm it with “Find and simulate” in the shopping plan.`,
+                    );
+                  else if ((action.action === 'inspect_slot' || action.action === 'view_shopping_plan') && selectedId)
+                    void api
+                      .executeGeminiTool({
+                        characterId: selectedId,
+                        action: action.action,
+                        slot: action.slot,
+                      })
+                      .then((result) => setMessage(`Gemini tool completed read-only: ${result.action}.`))
+                      .catch((e) => setError(e instanceof Error ? e.message : 'Tool failed.'));
+                }}
+              />
+            </div>
           )}
 
           {detail?.diagnosis && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="overview">
               <div className="build-section-title">
                 <UserCircle2 />
                 <div>
@@ -1958,7 +1948,7 @@ export function CharactersPage() {
           )}
 
           {detail && detail.history.length > 0 && (
-            <section className="card build-card">
+            <section className="card build-card" data-tab-group="overview">
               <div className="build-section-title">
                 <History />
                 <div>

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CharactersPage } from './CharactersPage';
+import { I18nProvider } from '../i18n';
 
 const character = {
   id: 1,
@@ -19,6 +20,7 @@ const character = {
 };
 
 beforeEach(() => {
+  localStorage.clear();
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => ({
@@ -91,5 +93,44 @@ describe('characters page', () => {
         true,
       ),
     );
+  });
+
+  it('shows the Assistant tab content only once that tab is active, in English', async () => {
+    const user = userEvent.setup();
+    render(<CharactersPage />);
+    await screen.findByText('Frostbolt');
+    const openButton = screen
+      .getAllByRole('button')
+      .find((button) => button.closest('article')?.textContent?.includes('Frostbolt'));
+    await user.click(openButton!);
+    await screen.findByText(/Keep: Rune Pace/i);
+    expect(screen.getByRole('heading', { name: 'Analysis history' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Ask about this build' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Build Lab' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Assistant' }));
+    expect(await screen.findByRole('heading', { name: 'Ask about this build' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Build Lab' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Analysis history' })).not.toBeInTheDocument();
+  });
+
+  it('places the Assistant tab content correctly even when headings are localized to Portuguese', async () => {
+    localStorage.setItem('exile-companion-language', 'pt-BR');
+    const user = userEvent.setup();
+    render(
+      <I18nProvider>
+        <CharactersPage />
+      </I18nProvider>,
+    );
+    await screen.findByText('Frostbolt');
+    const openButton = screen
+      .getAllByRole('button')
+      .find((button) => button.closest('article')?.textContent?.includes('Frostbolt'));
+    await user.click(openButton!);
+    await screen.findByText(/Keep: Rune Pace/i);
+    // The Gemini coach heading is translated ("Pergunte sobre esta build"), which is exactly
+    // the case the old hardcoded-English text-matching logic silently misplaced.
+    expect(screen.queryByRole('heading', { name: 'Pergunte sobre esta build' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Assistente' }));
+    expect(await screen.findByRole('heading', { name: 'Pergunte sobre esta build' })).toBeVisible();
   });
 });
